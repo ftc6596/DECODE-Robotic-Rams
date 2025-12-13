@@ -1,9 +1,12 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import java.util.ArrayList;
@@ -11,6 +14,8 @@ import java.util.ArrayList;
 @TeleOp(name="MORTARTeleop", group="Linear OpMode")
 public class MORTARTeleop extends LinearOpMode {
     //Electronic Variables
+    //Extras
+    private Limelight3A limelight;
     //Motors
     private DcMotorEx topMotor;
     private DcMotorEx bottomMotor;
@@ -34,13 +39,18 @@ public class MORTARTeleop extends LinearOpMode {
         RFront = hardwareMap.get(DcMotor.class, "rightfront");
         LBack  = hardwareMap.get(DcMotor.class, "leftback");
         RBack = hardwareMap.get(DcMotor.class, "rightback");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(0);
+        limelight.start();
         //Variables
         double velocity = 800;
         boolean shooterOn = true;
         boolean OnOffShooter = false;
         boolean nextSlot = false;
         boolean ableToSwitchMode = true;
-        String driveMode = "INTAKE";
+        boolean autoAiming = false;
+        boolean ableToAim = true;
+        String driveMode = "FAST";
         int slot = 0;
         //Setup for Electronics
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
@@ -49,34 +59,92 @@ public class MORTARTeleop extends LinearOpMode {
         RFront.setDirection(DcMotor.Direction.FORWARD);
         RBack.setDirection(DcMotor.Direction.REVERSE);
         topMotor.setDirection(DcMotor.Direction.REVERSE);
+        topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        bottomMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         waitForStart();
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
         outtakeFeeder.setPosition(0.4);
         while(opModeIsActive()) {
-            //Driving
-            //Inputs
-            double Ly = gamepad1.left_stick_y;
-            if(driveMode.equals("SHOOT"))
-            {
-                Ly = -Ly;
-            }
+            LLResult result = limelight.getLatestResult();
+            if(result != null) {
+                if (result.isValid()) {
+                    double x = result.getTx();
+                    double a = result.getTa();
+                    if(autoAiming)
+                    {
+                        if(x > 1.1)
+                        {
+                            TurnLeft(LFront, RFront, LBack, RBack);
+                        } else if (x < -1.1) {
+                            TurnRight(LFront, RFront, LBack, RBack);
+                        } else {
+                            Stop(LFront, RFront, LBack, RBack);
+                            autoAiming = false;
+                        }
+                    }
 
-            double Lx = gamepad1.left_stick_x;
-            double Rx = gamepad1.right_stick_x * .5;
-            //Computing Powers
-            double LeftFrontWheel = Ly + Lx - Rx;
-            double RightFrontWheel = Ly - Lx + Rx;
-            double LeftBackWheel = Ly - Lx - Rx;
-            double RightBackWheel = Ly + Lx + Rx;
-            //Shooter
-            //Increase Velocity
-            if(gamepad2.left_trigger != 0)
+                    velocity = 850 - ((195 * a) - 60);
+                }
+                else if (autoAiming)
+                {
+                    Stop(LFront, RFront, LBack, RBack);
+                    autoAiming = false;
+                }
+                else {
+                    if (gamepad2.left_trigger != 0)
+                    {
+                        velocity = 830;
+                    }
+                    else
+                    {
+                        velocity = 635;
+                    }
+                }
+            }
+            else if (autoAiming)
             {
-                velocity = 850;
+                Stop(LFront, RFront, LBack, RBack);
+                autoAiming = false;
+            }
+            else {
+                if (gamepad2.left_trigger != 0)
+                {
+                    velocity = 830;
+                }
+                else
+                {
+                    velocity = 635;
+                }
+            }
+            //Driving
+            if(!autoAiming)
+            {
+                ApplyInputToMotors(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, driveMode, LFront, RFront, LBack, RBack);
+            }
+            //Aiming
+            if(ableToAim)
+            {
+                if(gamepad1.left_trigger != 0 && !autoAiming)
+                {
+                    ableToAim = false;
+
+                    autoAiming = true;
+                } else if (gamepad1.left_trigger != 0 && autoAiming) {
+                    ableToAim = false;
+
+                    autoAiming = false;
+                }
             }
             else
             {
-                velocity = 800;
+                if(gamepad1.left_trigger == 0)
+                {
+                    ableToAim = true;
+                }
             }
+            //Shooter
+
             //Feed Shooter
             if(gamepad2.right_trigger >= .6)
             {
@@ -85,7 +153,7 @@ public class MORTARTeleop extends LinearOpMode {
             } else if (gamepad2.right_trigger > 0) {
                 outtakeFeeder.setPosition(0.75);
             } else {
-                outtakeFeeder.setPosition(0.4);
+                outtakeFeeder.setPosition(0.1);
             }
             //Shooter On Off
             if(!OnOffShooter)
@@ -117,13 +185,13 @@ public class MORTARTeleop extends LinearOpMode {
             //Change Drive Mode
             if(ableToSwitchMode)
             {
-                if(gamepad1.a && driveMode.equals("INTAKE"))
+                if(gamepad1.a && driveMode.equals("FAST"))
                 {
                     ableToSwitchMode = false;
-                    driveMode = "SHOOT";
-                } else if (gamepad1.a && driveMode.equals("SHOOT")) {
+                    driveMode = "SLOW";
+                } else if (gamepad1.a && driveMode.equals("SLOW")) {
                     ableToSwitchMode = false;
-                    driveMode = "INTAKE";
+                    driveMode = "FAST";
                 }
             }
             else
@@ -134,41 +202,27 @@ public class MORTARTeleop extends LinearOpMode {
                 }
             }
 
-            //Makes sure that when the robot changes from slot 2-0 it stays at the right position
-//            if(slot == 0 && sorter.getMode().equals(DcMotor.RunMode.RUN_TO_POSITION))
-//            {
-//                if(sorter.getCurrentPosition() == 390 && sorter.getPower() == 0.0)
-//                {
-//                    sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-//                    sorter.setTargetPosition(0);
-//                }
-//                else if(sorter.getCurrentPosition() != 0 && sorter.getCurrentPosition() < 260)
-//                {
-//                    nextSlot = true;
-//                    RotateMotorToSlot(sorter,0);
-//                    sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-//                } else if (sorter.getCurrentPosition() != 0 && sorter.getCurrentPosition() != 380) {
-//                    nextSlot = true;
-//                }
-//            }
-
             //Moves the sorter to the next slot with no skipping
             if(!nextSlot)
             {
                 if(gamepad2.dpad_right)
                 {
                     nextSlot = true;
-                    slot = RotateMotorToNextSlotEncoder(sorter, slot);
+                    slot = RotateMotorToNextSlotEncoder(sorter, slot, false);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 } else if (gamepad2.y) {
                     nextSlot = true;
                     RotateMotorToNextHalfSlotEncoder(sorter);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                } else if (gamepad2.dpad_left) {
+                    nextSlot = true;
+                    slot = RotateMotorToNextSlotEncoder(sorter, slot, true);
+                    sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                 }
             }
             else
             {
-                if(!gamepad2.dpad_right && !gamepad2.y)
+                if(!gamepad2.dpad_right && !gamepad2.y && !gamepad2.dpad_left)
                 {
                     nextSlot = false;
                 }
@@ -226,11 +280,7 @@ public class MORTARTeleop extends LinearOpMode {
                     bottomMotor.setVelocity(0);
                 }
             }
-            //Applying Power the Drive Train
-            LFront.setPower(LeftFrontWheel);
-            RFront.setPower(RightFrontWheel);
-            LBack.setPower(LeftBackWheel);
-            RBack.setPower(RightBackWheel);
+
 
             //Telemetry
             //Shooter
@@ -244,6 +294,58 @@ public class MORTARTeleop extends LinearOpMode {
             telemetry.update();
         }
 
+    }
+
+    //Applies input to the Drive Motors
+    public static void ApplyInputToMotors(double Ly, double Lx, double Rx, String driveMode, DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack)
+    {
+        //Inputs
+        if(driveMode.equals("SLOW"))
+        {
+            Ly = Ly * .5;
+            Lx = Lx * .5;
+        }
+        //Computing Powers
+        double LeftFrontWheel = Ly + Lx - Rx;
+        double RightFrontWheel = Ly - Lx + Rx;
+        double LeftBackWheel = Ly - Lx - Rx;
+        double RightBackWheel = Ly + Lx + Rx;
+
+        //Applying Power the Drive Train
+        LFront.setPower(LeftFrontWheel);
+        RFront.setPower(RightFrontWheel);
+        LBack.setPower(LeftBackWheel);
+        RBack.setPower(RightBackWheel);
+    }
+
+    //Turn the Robot Left
+    public static void TurnRight(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack)
+    {
+        //Applying Power the Drive Train
+        LFront.setPower(.5);
+        RFront.setPower(-.5);
+        LBack.setPower(.5);
+        RBack.setPower(-.5);
+    }
+
+    //Turn the Robot Right
+    public static void TurnLeft(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack)
+    {
+        //Applying Power the Drive Train
+        LFront.setPower(-.5);
+        RFront.setPower(.5);
+        LBack.setPower(-.5);
+        RBack.setPower(.5);
+    }
+
+    //Stop the Robot
+    public static void Stop(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack)
+    {
+        //Applying Power the Drive Train
+        LFront.setPower(0);
+        RFront.setPower(0);
+        LBack.setPower(0);
+        RBack.setPower(0);
     }
 
     //Changes Slot Ball State
@@ -283,16 +385,30 @@ public class MORTARTeleop extends LinearOpMode {
         sorter.setTargetPosition(angle);
     }
     //Rotates to the next slot using encoder ticks
-    public static int RotateMotorToNextSlotEncoder(DcMotor sorter, int slot)
+    public static int RotateMotorToNextSlotEncoder(DcMotor sorter, int slot, boolean inverse)
     {
-        sorter.setTargetPosition(sorter.getTargetPosition() + 128);
-        int nextSlot = slot + 1;
-        if(nextSlot >= 3)
+        if(!inverse)
         {
-            return 0;
-        }
+            sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+            int nextSlot = slot + 1;
+            if(nextSlot >= 3)
+            {
+                return 0;
+            }
 
-        return nextSlot;
+            return nextSlot;
+        }
+        else
+        {
+            sorter.setTargetPosition(sorter.getTargetPosition() - 128);
+            int nextSlot = slot - 1;
+            if(nextSlot <= -1)
+            {
+                return 2;
+            }
+
+            return nextSlot;
+        }
     }
     //Rotates to the next slot using encoder ticks
     public static void RotateMotorToNextHalfSlotEncoder(DcMotor sorter)

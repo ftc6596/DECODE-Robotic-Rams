@@ -7,11 +7,15 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.util.Timer;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import java.util.ArrayList;
@@ -19,6 +23,8 @@ import java.util.ArrayList;
 @Autonomous(name="ObeliskAutoBlue", group="Linear OpMode")
 public class ObeliskAutoBlue extends OpMode {
     //Electronic Variables
+    //Extra
+    private Limelight3A limelight;
     //Motors
     private DcMotorEx topMotor;
     private DcMotorEx bottomMotor;
@@ -45,7 +51,9 @@ public class ObeliskAutoBlue extends OpMode {
 
     private Path scorePreload;
     private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup3, scorePickup3;
+    boolean foundMotif = false;
 
+    ArrayList<String> motif = new ArrayList<>();
     public void buildPaths() {
         /* This is our scorePreload path. We are using a BezierLine, which is a straight line. */
         scorePreload = new Path(new BezierLine(startPose, scorePose));
@@ -106,13 +114,6 @@ public class ObeliskAutoBlue extends OpMode {
                 setPathState(1);
                 break;
             case 1:
-
-            /* You could check for
-            - Follower State: "if(!follower.isBusy()) {}"
-            - Time: "if(pathTimer.getElapsedTimeSeconds() > 1) {}"
-            - Robot Position: "if(follower.getPose().getX() > 36) {}"
-            */
-
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Score Preload */
@@ -311,6 +312,9 @@ public class ObeliskAutoBlue extends OpMode {
 
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
     }
 
     /** This method is called continuously after Init while waiting for "play". **/
@@ -325,8 +329,8 @@ public class ObeliskAutoBlue extends OpMode {
         setPathState(0);
         outtakeFeeder.setPosition(0.4);
         //Applies power to the shooter
-        topMotor.setVelocity(800);
-        bottomMotor.setVelocity(800);
+        topMotor.setVelocity(635);
+        bottomMotor.setVelocity(635);
         sorter.setTargetPosition(128);
         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         sorter.setPower(1);
