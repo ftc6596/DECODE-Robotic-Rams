@@ -20,7 +20,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 
 import java.util.ArrayList;
 
-@Autonomous(name="BackAutoRed", group="Linear OpMode")
+@Autonomous(name="BackAutoRed", group="OpMode")
 public class BackAutoRed extends OpMode {
     //Electronic Variables
     //Extra
@@ -28,7 +28,7 @@ public class BackAutoRed extends OpMode {
     //Motors
     private DcMotorEx topMotor;
     private DcMotorEx bottomMotor;
-    private DcMotor sorter = null;
+    private DcMotorEx sorter = null;
     private DcMotor intake;
     //Servos
     private Servo outtakeFeeder;
@@ -37,17 +37,17 @@ public class BackAutoRed extends OpMode {
     private int slot = 0;
     private Follower follower;
     private Timer pathTimer, actionTimer, opmodeTimer;
-    private long secondShot = 2300;
+    private long secondShot = 1750;
     private long thirdShot = secondShot * 2;
     private int pathState;
 
-    private final Pose startPose = new Pose(96, 8, Math.toRadians(270)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(81, 87, Math.toRadians(226)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose pickup1APose = new Pose(113.5, 86, Math.toRadians(0));
-    private final Pose pickup1BPose = new Pose(122, 86, Math.toRadians(0));
-    private final Pose pickup1CPose = new Pose(132, 86, Math.toRadians(0));// Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose pickup2Pose = new Pose(14, 68, Math.toRadians(0)); // Middle (Second Set) of Artifacts from the Spike Mark.
-    private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
+    private final Pose startPose = new Pose(88, 9.5, Math.toRadians(250)); // Start Pose of our robot.
+    private final Pose scorePose = new Pose(88, 9.5, Math.toRadians(250)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose pickup1APose = new Pose(112, 45, Math.toRadians(360));
+    private final Pose pickup1BPose = new Pose(118, 45, Math.toRadians(360));
+    private final Pose pickup1CPose = new Pose(132, 45, Math.toRadians(360));// Highest (First Set) of Artifacts from the Spike Mark.
+    private final Pose pickup2Pose = new Pose(14, 68, Math.toRadians(180)); // Middle (Second Set) of Artifacts from the Spike Mark.
+    private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private Path scorePreload;
     private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup3, scorePickup3;
@@ -111,44 +111,15 @@ public class BackAutoRed extends OpMode {
         switch (pathState) {
             case 0:
                 follower.followPath(scorePreload);
-                setPathState(1);
+                if(opmodeTimer.getElapsedTimeSeconds() >= 2)
+                {
+                    setPathState(1);
+                }
+
                 break;
             case 1:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if(!follower.isBusy()) {
-                    /* Score Preload */
-                    if(ableToResetTimer)
-                    {
-                        pathTimer.resetTimer();
-                        ableToResetTimer = false;
-                    }
-
-                    if(pathTimer.getElapsedTime() > 7100)
-                    {
-                        ableToResetTimer = true;
-                        follower.followPath(grabPickup1,true);
-                        setPathState(2);
-                    } else if (((pathTimer.getElapsedTime() > 2150 && pathTimer.getElapsedTime() < 2800) || (pathTimer.getElapsedTime() > 2150 + secondShot && pathTimer.getElapsedTime() < 2800 + secondShot) || (pathTimer.getElapsedTime() > 2150 + thirdShot && pathTimer.getElapsedTime() < 2800 + thirdShot)) && nextSlot) {
-                        if((pathTimer.getElapsedTime() > 6550 && pathTimer.getElapsedTime() < 7100))
-                        {
-                            sorter.setTargetPosition(sorter.getTargetPosition() + 64);
-                        }
-                        else
-                        {
-                            sorter.setTargetPosition(sorter.getTargetPosition() + 128);
-                        }
-
-                        nextSlot = false;
-                        slot = RotateMotorToNextSlot(sorter, slot);
-                    } else if ((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2150) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2150 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2150 + thirdShot)) {
-                        outtakeFeeder.setPosition(.4);
-                    } else if ((pathTimer.getElapsedTime() > 1050 && pathTimer.getElapsedTime() < 1600) || (pathTimer.getElapsedTime() > 1050 + secondShot && pathTimer.getElapsedTime() < 1600 + secondShot) || (pathTimer.getElapsedTime() > 1050 + thirdShot && pathTimer.getElapsedTime() < 1600 + thirdShot)) {
-                        outtakeFeeder.setPosition(1);
-                    } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 1050) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 1050 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 1050 + thirdShot)) {
-                        outtakeFeeder.setPosition(.75);
-                        nextSlot = true;
-                    }
-                }
+                ShootAllBalls(2);
                 break;
             case 2:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
@@ -172,7 +143,7 @@ public class BackAutoRed extends OpMode {
                 break;
             case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if (pathTimer.getElapsedTime() > 1800 && slot == 1) {
+                if (pathTimer.getElapsedTime() > 1500 && slot == 1) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sorter.setPower(1);
@@ -181,7 +152,7 @@ public class BackAutoRed extends OpMode {
                 if(!follower.isBusy()) {
                     /* Score Sample */
 
-                    if(pathTimer.getElapsedTime() > 2500)
+                    if(pathTimer.getElapsedTime() > 1750)
                     {
                         follower.followPath(grabPickup1B,true);
                         setPathState(4);
@@ -191,7 +162,7 @@ public class BackAutoRed extends OpMode {
                 break;
             case 4:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
-                if (pathTimer.getElapsedTime() > 1600 && slot == 2) {
+                if (pathTimer.getElapsedTime() > 1500 && slot == 2) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sorter.setPower(1);
@@ -199,13 +170,13 @@ public class BackAutoRed extends OpMode {
                 }
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    if(pathTimer.getElapsedTime() > 2500)
+                    if(pathTimer.getElapsedTime() > 1750)
                     {
                         sorter.setTargetPosition(sorter.getTargetPosition() + 64);
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                         sorter.setPower(1);
                         slot = RotateMotorToNextSlot(sorter, slot);
-                        intake.setPower(0);
+
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup1,true);
                         setPathState(5);
@@ -213,38 +184,9 @@ public class BackAutoRed extends OpMode {
                 }
                 break;
             case 5:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                intake.setPower(0);
                 if(!follower.isBusy()) {
-                    /* Score Sample */
-                    if(ableToResetTimer)
-                    {
-                        pathTimer.resetTimer();
-                        ableToResetTimer = false;
-                    }
-
-                    if(pathTimer.getElapsedTime() > 7100)
-                    {
-                        ableToResetTimer = true;
-                    } else if (((pathTimer.getElapsedTime() > 2150 && pathTimer.getElapsedTime() < 2800) || (pathTimer.getElapsedTime() > 2150 + secondShot && pathTimer.getElapsedTime() < 2800 + secondShot) || (pathTimer.getElapsedTime() > 2150 + thirdShot && pathTimer.getElapsedTime() < 2800 + thirdShot)) && nextSlot) {
-                        if((pathTimer.getElapsedTime() > 6550 && pathTimer.getElapsedTime() < 7100))
-                        {
-                            sorter.setTargetPosition(sorter.getTargetPosition() + 64);
-                        }
-                        else
-                        {
-                            sorter.setTargetPosition(sorter.getTargetPosition() + 128);
-                        }
-
-                        nextSlot = false;
-                        slot = RotateMotorToNextSlot(sorter, slot);
-                    } else if ((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2150) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2150 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2150 + thirdShot)) {
-                        outtakeFeeder.setPosition(.4);
-                    } else if ((pathTimer.getElapsedTime() > 1050 && pathTimer.getElapsedTime() < 1600) || (pathTimer.getElapsedTime() > 1050 + secondShot && pathTimer.getElapsedTime() < 1600 + secondShot) || (pathTimer.getElapsedTime() > 1050 + thirdShot && pathTimer.getElapsedTime() < 1600 + thirdShot)) {
-                        outtakeFeeder.setPosition(1);
-                    } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 1050) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 1050 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 1050 + thirdShot)) {
-                        outtakeFeeder.setPosition(.75);
-                        nextSlot = true;
-                    }
+                    ShootAllBalls(6);
                 }
                 break;
             case 6:
@@ -307,14 +249,15 @@ public class BackAutoRed extends OpMode {
         topMotor = hardwareMap.get(DcMotorEx.class, "top");
         bottomMotor = hardwareMap.get(DcMotorEx.class, "bottom");
         outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
-        sorter = hardwareMap.get(DcMotor.class, "sorter");
+        sorter = hardwareMap.get(DcMotorEx.class, "sorter");
         intake = hardwareMap.get(DcMotor.class, "intake");
 
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
-        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
+        sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
     }
 
     /** This method is called continuously after Init while waiting for "play". **/
@@ -327,11 +270,11 @@ public class BackAutoRed extends OpMode {
     public void start() {
         opmodeTimer.resetTimer();
         setPathState(0);
-        outtakeFeeder.setPosition(0.4);
+        outtakeFeeder.setPosition(0);
         //Applies power to the shooter
-        topMotor.setVelocity(635);
-        bottomMotor.setVelocity(635);
-        sorter.setTargetPosition(128);
+        topMotor.setVelocity(810);
+        bottomMotor.setVelocity(810);
+        sorter.setTargetPosition(0);
         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         sorter.setPower(1);
     }
@@ -391,20 +334,21 @@ public class BackAutoRed extends OpMode {
     }
 
     //Shoot All Balls
-    public void ShootAllBalls() {
+    public void ShootAllBalls(int nextPath) {
         if(ableToResetTimer)
         {
             pathTimer.resetTimer();
             ableToResetTimer = false;
+            nextSlot = true;
         }
 
-        if(pathTimer.getElapsedTime() > 7100)
+        if(pathTimer.getElapsedTime() > 5750)
         {
             ableToResetTimer = true;
             follower.followPath(grabPickup1,true);
-            setPathState(2);
-        } else if (((pathTimer.getElapsedTime() > 2150 && pathTimer.getElapsedTime() < 2800) || (pathTimer.getElapsedTime() > 2150 + secondShot && pathTimer.getElapsedTime() < 2800 + secondShot) || (pathTimer.getElapsedTime() > 2150 + thirdShot && pathTimer.getElapsedTime() < 2800 + thirdShot)) && nextSlot) {
-            if((pathTimer.getElapsedTime() > 6550 && pathTimer.getElapsedTime() < 7100))
+            setPathState(nextPath);
+        }  else if (((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2250) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2250 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2250 + thirdShot)) && nextSlot) {
+            if((pathTimer.getElapsedTime() > 4750))
             {
                 sorter.setTargetPosition(sorter.getTargetPosition() + 64);
             }
@@ -415,10 +359,8 @@ public class BackAutoRed extends OpMode {
 
             nextSlot = false;
             slot = RotateMotorToNextSlot(sorter, slot);
-        } else if ((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2150) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2150 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2150 + thirdShot)) {
-            outtakeFeeder.setPosition(.4);
         } else if ((pathTimer.getElapsedTime() > 1050 && pathTimer.getElapsedTime() < 1600) || (pathTimer.getElapsedTime() > 1050 + secondShot && pathTimer.getElapsedTime() < 1600 + secondShot) || (pathTimer.getElapsedTime() > 1050 + thirdShot && pathTimer.getElapsedTime() < 1600 + thirdShot)) {
-            outtakeFeeder.setPosition(1);
+            outtakeFeeder.setPosition(0);
         } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 1050) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 1050 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 1050 + thirdShot)) {
             outtakeFeeder.setPosition(.75);
             nextSlot = true;

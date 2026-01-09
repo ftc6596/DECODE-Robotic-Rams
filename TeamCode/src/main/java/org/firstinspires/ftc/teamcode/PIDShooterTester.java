@@ -48,8 +48,8 @@ public class PIDShooterTester extends LinearOpMode {
         topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         bottomMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         waitForStart();
-        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
-        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(25,3,1.25,5.5));
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
         outtakeFeeder.setPosition(0);
         while(opModeIsActive()) {
             PIDFCoefficients pidfCoefficients = topMotor.getPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -126,10 +126,10 @@ public class PIDShooterTester extends LinearOpMode {
                     pidfCoefficients.d -= .1;
                 }else if (gamepad2.y) {
                     changeValue = false;
-                    pidfCoefficients.f += .1;
+                    pidfCoefficients.f += 1;
                 }else if (gamepad2.a) {
                     changeValue = false;
-                    pidfCoefficients.f -= .1;
+                    pidfCoefficients.f -= 1;
                 }else if (gamepad2.b) {
                     changeValue = false;
                     pidfCoefficients.i += .1;
