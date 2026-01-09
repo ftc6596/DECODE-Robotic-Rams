@@ -47,10 +47,10 @@ public class BackAutoRed extends OpMode {
     private final Pose pickup1BPose = new Pose(118, 45, Math.toRadians(360));
     private final Pose pickup1CPose = new Pose(132, 45, Math.toRadians(360));// Highest (First Set) of Artifacts from the Spike Mark.
     private final Pose pickup2Pose = new Pose(14, 68, Math.toRadians(180)); // Middle (Second Set) of Artifacts from the Spike Mark.
-    private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
+    private final Pose endingPose = new Pose(120, 18, Math.toRadians(0)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private Path scorePreload;
-    private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup3, scorePickup3;
+    private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, ending;
     boolean foundMotif = false;
 
     ArrayList<String> motif = new ArrayList<>();
@@ -83,27 +83,9 @@ public class BackAutoRed extends OpMode {
                 .build();
 
         /* This is our grabPickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        grabPickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup2Pose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup2Pose.getHeading(), .1)
-                .build();
-
-        /* This is our scorePickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup2Pose, scorePose))
-                .setLinearHeadingInterpolation(pickup2Pose.getHeading(), scorePose.getHeading())
-                .build();
-
-        /* This is our grabPickup3 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        grabPickup3 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup3Pose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup3Pose.getHeading(), .1)
-                .build();
-
-        /* This is our scorePickup3 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePickup3 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup3Pose, scorePose))
-                .setLinearHeadingInterpolation(pickup3Pose.getHeading(), scorePose.getHeading())
+        ending = follower.pathBuilder()
+                .addPath(new BezierLine(scorePose, endingPose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), endingPose.getHeading())
                 .build();
     }
 
@@ -119,7 +101,7 @@ public class BackAutoRed extends OpMode {
                 break;
             case 1:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                ShootAllBalls(2);
+                ShootAllBalls(2, grabPickup1);
                 break;
             case 2:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
@@ -186,20 +168,10 @@ public class BackAutoRed extends OpMode {
             case 5:
                 intake.setPower(0);
                 if(!follower.isBusy()) {
-                    ShootAllBalls(6);
+                    ShootAllBalls(6, ending);
                 }
                 break;
             case 6:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
-                if(!follower.isBusy()) {
-                    /* Grab Sample */
-
-                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scorePickup3, true);
-                    setPathState(7);
-                }
-                break;
-            case 7:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Set the state to a Case we won't use or define, so it just stops running an new paths */
@@ -334,7 +306,7 @@ public class BackAutoRed extends OpMode {
     }
 
     //Shoot All Balls
-    public void ShootAllBalls(int nextPath) {
+    public void ShootAllBalls(int nextPath, PathChain nextPathChain) {
         if(ableToResetTimer)
         {
             pathTimer.resetTimer();
@@ -345,7 +317,7 @@ public class BackAutoRed extends OpMode {
         if(pathTimer.getElapsedTime() > 5750)
         {
             ableToResetTimer = true;
-            follower.followPath(grabPickup1,true);
+            follower.followPath(nextPathChain,true);
             setPathState(nextPath);
         }  else if (((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2250) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2250 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2250 + thirdShot)) && nextSlot) {
             if((pathTimer.getElapsedTime() > 4750))

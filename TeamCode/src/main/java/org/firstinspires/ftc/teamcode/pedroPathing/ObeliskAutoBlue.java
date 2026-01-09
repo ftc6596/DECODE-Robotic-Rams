@@ -166,7 +166,7 @@ public class ObeliskAutoBlue extends OpMode {
             case 4:
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    if(pathTimer.getElapsedTime() > 500)
+                    if(pathTimer.getElapsedTime() > 600)
                     {
                         sorter.setTargetPosition(sorter.getTargetPosition() + 64);
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -226,7 +226,7 @@ public class ObeliskAutoBlue extends OpMode {
             case 8:
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    if(pathTimer.getElapsedTime() > 525)
+                    if(pathTimer.getElapsedTime() > 600)
                     {
                         sorter.setTargetPosition(sorter.getTargetPosition() + 64);
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -302,7 +302,7 @@ public class ObeliskAutoBlue extends OpMode {
 
         topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
         bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
-        sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
+        sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(13,.5,3,15));
     }
 
     /** This method is called continuously after Init while waiting for "play". **/
