@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -71,22 +72,30 @@ public class MORTARTeleop extends LinearOpMode {
             LLResult result = limelight.getLatestResult();
             if(result != null) {
                 if (result.isValid()) {
-                    double x = result.getTx();
-                    double a = result.getTa();
-                    if(autoAiming)
+                    for(LLResultTypes.FiducialResult tag : result.getFiducialResults())
                     {
-                        if(x > 1.1)
+                        int tagId = tag.getFiducialId();
+
+                        if (tagId != 21 && tagId != 22 && tagId != 23)
                         {
-                            TurnLeft(LFront, RFront, LBack, RBack, x);
-                        } else if (x < -1.1) {
-                            TurnRight(LFront, RFront, LBack, RBack, x);
-                        } else {
-                            Stop(LFront, RFront, LBack, RBack);
-                            autoAiming = false;
+                            double x = result.getTx();
+                            double a = result.getTa();
+                            if(autoAiming)
+                            {
+                                if(x > 1.1)
+                                {
+                                    TurnLeft(LFront, RFront, LBack, RBack, x);
+                                } else if (x < -1.1) {
+                                    TurnRight(LFront, RFront, LBack, RBack, x);
+                                } else {
+                                    Stop(LFront, RFront, LBack, RBack);
+                                    autoAiming = false;
+                                }
+                            }
+
+                            velocity = 850 - ((195 * a) - 20);
                         }
                     }
-
-                    velocity = 850 - ((195 * a) - 20);
                 }
                 else if (autoAiming)
                 {
@@ -331,21 +340,23 @@ public class MORTARTeleop extends LinearOpMode {
     //Turn the Robot Left
     public static void TurnRight(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
+        double power = .12;
         //Applying Power the Drive Train
-        LFront.setPower(.15);
-        RFront.setPower(-.15);
-        LBack.setPower(.15);
-        RBack.setPower(-.15);
+        LFront.setPower(power);
+        RFront.setPower(-power);
+        LBack.setPower(power);
+        RBack.setPower(-power);
     }
 
     //Turn the Robot Right
     public static void TurnLeft(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
+        double power = .12;
         //Applying Power the Drive Train
-        LFront.setPower(-.15);
-        RFront.setPower(.15);
-        LBack.setPower(-.15);
-        RBack.setPower(.15);
+        LFront.setPower(-power);
+        RFront.setPower(power);
+        LBack.setPower(-power);
+        RBack.setPower(power);
     }
 
     //Stop the Robot
@@ -457,19 +468,19 @@ public class MORTARTeleop extends LinearOpMode {
     public static void ShootAllBalls(LinearOpMode opmode, Servo outtakeFeeder, DcMotor sorter, int slot)
     {
         outtakeFeeder.setPosition(0.75);
-        opmode.sleep(500);
+        opmode.sleep(250);
         outtakeFeeder.setPosition(0);
-        opmode.sleep(500);
+        opmode.sleep(300);
         slot = RotateMotorToNextSlotEncoder(sorter, slot, false);
-        opmode.sleep(1000);
-        outtakeFeeder.setPosition(0.75);
         opmode.sleep(500);
+        outtakeFeeder.setPosition(0.75);
+        opmode.sleep(250);
         outtakeFeeder.setPosition(0);
-        opmode.sleep(500);
+        opmode.sleep(300);
         slot = RotateMotorToNextSlotEncoder(sorter, slot, false);
-        opmode.sleep(1000);
-        outtakeFeeder.setPosition(0.75);
         opmode.sleep(500);
+        outtakeFeeder.setPosition(0.75);
+        opmode.sleep(250);
         outtakeFeeder.setPosition(0);
 
     }

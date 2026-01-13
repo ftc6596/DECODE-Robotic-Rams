@@ -41,30 +41,34 @@ public class ObeliskAutoBlue extends OpMode {
     private long thirdShot = secondShot * 2;
     private int pathState;
 
-    private final Pose startPose = new Pose(63.5, 132, Math.toRadians(270)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(60, 90, Math.toRadians(313)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose pickup1APose = new Pose(30, 82, Math.toRadians(180));
-    private final Pose pickup1BPose = new Pose(24, 82, Math.toRadians(180));
+    private final Pose startPose = new Pose(32.75, 129, Math.toRadians(270));// Start Pose of our robot.
+    private final Pose ReadMotifPose = new Pose(62, 91, Math.toRadians(270));
+    private final Pose scorePose = new Pose(58, 89, Math.toRadians(313)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose pickup1APose = new Pose(29.5, 82, Math.toRadians(180));
+    private final Pose pickup1BPose = new Pose(23.5, 82, Math.toRadians(180));
     private final Pose pickup1CPose = new Pose(16, 82, Math.toRadians(180));
-    private final Pose pickup2APose = new Pose(30, 59, Math.toRadians(180));
-    private final Pose pickup2BPose = new Pose(24, 59, Math.toRadians(180));
+    private final Pose pickup2APose = new Pose(29.5, 59, Math.toRadians(180));
+    private final Pose pickup2BPose = new Pose(23.5, 59, Math.toRadians(180));
     private final Pose pickup2CPose = new Pose(16, 59, Math.toRadians(180));
     private final Pose endingPose = new Pose(28, 66, Math.toRadians(270)); // Middle (Second Set) of Artifacts from the Spike Mark.
     private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
+    private Path readMotif;
     private Path scorePreload;
-    private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup2A, grabPickup2B, ending;
+    private PathChain  grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup2A, grabPickup2B, ending;
     boolean foundMotif = false;
-
+    int motifId = -1;
     ArrayList<String> motif = new ArrayList<>();
     public void buildPaths() {
         /* This is our scorePreload path. We are using a BezierLine, which is a straight line. */
-        scorePreload = new Path(new BezierLine(startPose, scorePose));
-        scorePreload.setLinearHeadingInterpolation(startPose.getHeading(), scorePose.getHeading());
+        readMotif = new Path(new BezierLine(startPose, ReadMotifPose));
+        readMotif.setLinearHeadingInterpolation(startPose.getHeading(), ReadMotifPose.getHeading());
+
 
     /* Here is an example for Constant Interpolation
     scorePreload.setConstantInterpolation(startPose.getHeading()); */
-
+        scorePreload = new Path(new BezierLine(ReadMotifPose, scorePose));
+        scorePreload.setLinearHeadingInterpolation(ReadMotifPose.getHeading(), scorePose.getHeading());
         /* This is our grabPickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
         grabPickup1 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, pickup1APose))
@@ -115,17 +119,43 @@ public class ObeliskAutoBlue extends OpMode {
     public void autonomousPathUpdate() {
         switch (pathState) {
             case 0:
-                follower.followPath(scorePreload);
+                follower.followPath(readMotif);
                 setPathState(1);
                 break;
             case 1:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                if (!foundMotif)
+                {
+                    LLResult result = limelight.getLatestResult();
+
+                    if(result != null)
+                    {
+                        if(result.isValid())
+                        {
+                            for(LLResultTypes.FiducialResult tag : result.getFiducialResults())
+                            {
+                                motifId = tag.getFiducialId();
+                                foundMotif = true;
+
+                                Sort(sorter, motifId, 0);
+                            }
+                        }
+                    }
+                }
+
                 if(!follower.isBusy()) {
-                    ShootAllBalls(2, grabPickup1, 0);
+                    follower.followPath(scorePreload);
+                    setPathState(2);
                     slot = 0;
                 }
                 break;
             case 2:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
+                if(!follower.isBusy()) {
+                    ShootAllBalls(3, grabPickup1, 0);
+                    slot = 0;
+                }
+                break;
+            case 3:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
                 intake.setPower(-1);
                 if (pathTimer.getElapsedTime() > 2000 && slot == 0) {
@@ -141,11 +171,11 @@ public class ObeliskAutoBlue extends OpMode {
                     if(pathTimer.getElapsedTime() > 2100)
                     {
                         follower.followPath(grabPickup1A,true);
-                        setPathState(3);
+                        setPathState(4);
                     }
                 }
                 break;
-            case 3:
+            case 4:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if (pathTimer.getElapsedTime() > 1000 && slot == 1) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
@@ -159,11 +189,11 @@ public class ObeliskAutoBlue extends OpMode {
                     if(pathTimer.getElapsedTime() > 1100)
                     {
                         follower.followPath(grabPickup1B,true);
-                        setPathState(4);
+                        setPathState(5);
                     }
                 }
                 break;
-            case 4:
+            case 5:
                 if(!follower.isBusy()) {
                     /* Grab Sample */
                     if(pathTimer.getElapsedTime() > 600)
@@ -172,20 +202,21 @@ public class ObeliskAutoBlue extends OpMode {
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                         sorter.setPower(1);
                         slot = RotateMotorToNextSlot(sorter, slot);
+                        Sort(sorter, motifId, 1);
                         intake.setPower(0);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup1,true);
-                        setPathState(5);
+                        setPathState(6);
                     }
                 }
                 break;
-            case 5:
+            case 6:
                 if(!follower.isBusy()) {
-                    ShootAllBalls(6, grabPickup2, 1);
+                    ShootAllBalls(7, grabPickup2, 1);
                     slot = 0;
                 }
                 break;
-            case 6:
+            case 7:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
                 intake.setPower(-1);
                 if (pathTimer.getElapsedTime() > 2250 && slot == 0) {
@@ -201,11 +232,11 @@ public class ObeliskAutoBlue extends OpMode {
                     if(pathTimer.getElapsedTime() > 2500)
                     {
                         follower.followPath(grabPickup2A,true);
-                        setPathState(7);
+                        setPathState(8);
                     }
                 }
                 break;
-            case 7:
+            case 8:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if (pathTimer.getElapsedTime() > 1000 && slot == 1) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
@@ -219,11 +250,11 @@ public class ObeliskAutoBlue extends OpMode {
                     if(pathTimer.getElapsedTime() > 1100)
                     {
                         follower.followPath(grabPickup2B,true);
-                        setPathState(8);
+                        setPathState(9);
                     }
                 }
                 break;
-            case 8:
+            case 9:
                 if(!follower.isBusy()) {
                     /* Grab Sample */
                     if(pathTimer.getElapsedTime() > 600)
@@ -231,21 +262,22 @@ public class ObeliskAutoBlue extends OpMode {
                         sorter.setTargetPosition(sorter.getTargetPosition() + 64);
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                         sorter.setPower(1);
+                        Sort(sorter, motifId, 0);
                         slot = RotateMotorToNextSlot(sorter, slot);
                         intake.setPower(0);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup2,true);
-                        setPathState(9);
+                        setPathState(10);
                     }
                 }
                 break;
-            case 9:
+            case 10:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
-                    ShootAllBalls(10, ending, 0);
+                    ShootAllBalls(11, ending, 0);
                 }
                 break;
-            case 10:
+            case 11:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Set the state to a Case we won't use or define, so it just stops running an new paths */
@@ -276,6 +308,7 @@ public class ObeliskAutoBlue extends OpMode {
         telemetry.addData("y", follower.getPose().getY());
         telemetry.addData("heading", follower.getPose().getHeading());
         telemetry.addData("Slot: ", slot);
+        telemetry.addData("Found Motif: ", foundMotif);
         telemetry.update();
     }
 
@@ -286,7 +319,6 @@ public class ObeliskAutoBlue extends OpMode {
         opmodeTimer = new Timer();
         opmodeTimer.resetTimer();
 
-
         follower = Constants.createFollower(hardwareMap);
         buildPaths();
         follower.setStartingPose(startPose);
@@ -296,6 +328,7 @@ public class ObeliskAutoBlue extends OpMode {
         outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
         sorter = hardwareMap.get(DcMotorEx.class, "sorter");
         intake = hardwareMap.get(DcMotor.class, "intake");
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -303,6 +336,9 @@ public class ObeliskAutoBlue extends OpMode {
         topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
         bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(13,.5,3,15));
+
+        limelight.pipelineSwitch(0);
+        limelight.start();
     }
 
     /** This method is called continuously after Init while waiting for "play". **/
@@ -380,9 +416,47 @@ public class ObeliskAutoBlue extends OpMode {
 
     public static void Sort(DcMotor sorter, int motifId, int ballIndexId)
     {
-        if(motifId == 21 && ballIndexId == 0)
+        if(motifId == 21)
         {
-            //Nothing
+            if(ballIndexId == 0)
+            {
+                //Nothing
+            }
+            else if(ballIndexId == 1)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+            }
+            else if(ballIndexId == 2)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() - 128);
+            }
+        } else if (motifId == 22) {
+            if(ballIndexId == 0)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() - 128);
+            }
+            else if(ballIndexId == 1)
+            {
+                //Nothing
+            }
+            else if(ballIndexId == 2)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+            }
+        }
+        else if (motifId == 23) {
+            if(ballIndexId == 0)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+            }
+            else if(ballIndexId == 1)
+            {
+                sorter.setTargetPosition(sorter.getTargetPosition() - 128);
+            }
+            else if(ballIndexId == 2)
+            {
+                //Nothing
+            }
         }
     }
 
@@ -408,7 +482,7 @@ public class ObeliskAutoBlue extends OpMode {
         } else if ((pathTimer.getElapsedTime() > 850 && pathTimer.getElapsedTime() < 1400) || (pathTimer.getElapsedTime() > 850 + secondShot && pathTimer.getElapsedTime() < 1400 + secondShot) || (pathTimer.getElapsedTime() > 850 + thirdShot && pathTimer.getElapsedTime() < 1400 + thirdShot)) {
             outtakeFeeder.setPosition(0);
         } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 850) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 850 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 850 + thirdShot)) {
-            outtakeFeeder.setPosition(.75);
+            outtakeFeeder.setPosition(1);
             nextSlot = true;
         }
     }
