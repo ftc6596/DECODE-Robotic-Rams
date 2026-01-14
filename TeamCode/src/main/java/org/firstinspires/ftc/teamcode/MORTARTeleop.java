@@ -31,20 +31,23 @@ public class MORTARTeleop extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
         //References to Electronics
+        //Servos
+        outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
+        //Motors
         topMotor = hardwareMap.get(DcMotorEx.class, "top");
         bottomMotor = hardwareMap.get(DcMotorEx.class, "bottom");
-        outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
         sorter = hardwareMap.get(DcMotorEx.class, "sorter");
         intake = hardwareMap.get(DcMotor.class, "intake");
         LFront  = hardwareMap.get(DcMotor.class, "leftfront");
         RFront = hardwareMap.get(DcMotor.class, "rightfront");
         LBack  = hardwareMap.get(DcMotor.class, "leftback");
         RBack = hardwareMap.get(DcMotor.class, "rightback");
+        //LimeLght3A
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
         limelight.start();
         //Variables
-        double velocity = 800;
+        //Booleans
         boolean shooterOn = true;
         boolean OnOffShooter = false;
         boolean nextSlot = false;
@@ -52,9 +55,13 @@ public class MORTARTeleop extends LinearOpMode {
         boolean autoAiming = false;
         boolean ableToAim = true;
         boolean shootingAll = false;
+        //Modes
         String driveMode = "FAST";
+        //Numbers
+        double velocity = 800;
         int slot = 0;
         //Setup for Electronics
+        //Motors
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         LFront.setDirection(DcMotor.Direction.FORWARD);
         LBack.setDirection(DcMotor.Direction.FORWARD);
@@ -64,22 +71,27 @@ public class MORTARTeleop extends LinearOpMode {
         topMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         bottomMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         waitForStart();
+        //PIDF Coefficients
         topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
         bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
+        //Get the flicker set
         outtakeFeeder.setPosition(0.4);
         while(opModeIsActive()) {
+            //LimeLight3A Uses
             LLResult result = limelight.getLatestResult();
             if(result != null) {
                 if (result.isValid()) {
+                    //Goes through all the Tags
                     for(LLResultTypes.FiducialResult tag : result.getFiducialResults())
                     {
                         int tagId = tag.getFiducialId();
-
+                        //Checks if the tag is not the Obelisk
                         if (tagId != 21 && tagId != 22 && tagId != 23)
                         {
-                            double x = result.getTx();
-                            double a = result.getTa();
+                            double x = result.getTx();//Tag X Position
+                            double a = result.getTa();//Tag Area
+                            //Auto Aiming Code
                             if(autoAiming)
                             {
                                 if(x > 1.1)
@@ -92,17 +104,19 @@ public class MORTARTeleop extends LinearOpMode {
                                     autoAiming = false;
                                 }
                             }
-
+                            //Auto-Velocity Code
                             velocity = 850 - ((195 * a) - 20);
                         }
                     }
                 }
                 else if (autoAiming)
                 {
+                    //Stops if there is no April Tag
                     Stop(LFront, RFront, LBack, RBack);
                     autoAiming = false;
                 }
                 else {
+                    //Manual Flywheel speed just in case ;)
                     if (gamepad2.left_trigger != 0)
                     {
                         velocity = 830;
@@ -115,10 +129,12 @@ public class MORTARTeleop extends LinearOpMode {
             }
             else if (autoAiming)
             {
+                //Stops if there is no April Tag
                 Stop(LFront, RFront, LBack, RBack);
                 autoAiming = false;
             }
             else {
+                //Manual Flywheel speed just in case ;)
                 if (gamepad2.left_trigger != 0)
                 {
                     velocity = 830;
@@ -286,7 +302,7 @@ public class MORTARTeleop extends LinearOpMode {
                 bottomMotor.setVelocity(velocity);
             }
             else
-            {
+            {//Turn off shooter
                 if(OnOffShooter)
                 {
                     topMotor.setVelocity(0);
