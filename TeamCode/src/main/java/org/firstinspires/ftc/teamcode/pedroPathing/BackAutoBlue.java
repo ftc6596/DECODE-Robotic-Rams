@@ -41,17 +41,16 @@ public class BackAutoBlue extends OpMode {
     private long thirdShot = secondShot * 2;
     private int pathState;
 
-    private final Pose startPose = new Pose(60, 9.5, Math.toRadians(290)); // Start Pose of our robot.
-    private final Pose scorePose = new Pose(60, 9.5, Math.toRadians(290)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
-    private final Pose pickup1APose = new Pose(30, 37, Math.toRadians(180));
-    private final Pose pickup1BPose = new Pose(24, 37, Math.toRadians(180));
-    private final Pose pickup1CPose = new Pose(16, 37, Math.toRadians(180));// Highest (First Set) of Artifacts from the Spike Mark.
-    private final Pose pickup2Pose = new Pose(14, 68, Math.toRadians(180)); // Middle (Second Set) of Artifacts from the Spike Mark.
-    private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
+    private final Pose startPose = new Pose(60, 9.5, Math.toRadians(270)); // Start Pose of our robot.
+    private final Pose scorePose = new Pose(60, 14, Math.toRadians(293)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
+    private final Pose pickup1Pose = new Pose(7.25, 14, Math.toRadians(185));
+    private final Pose pickup2Pose = new Pose(10, 14, Math.toRadians(180));
+    private final Pose endingPose = new Pose(10, 16, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private Path scorePreload;
-    private PathChain grabPickup1, grabPickup1A, grabPickup1B, scorePickup1, grabPickup2, scorePickup2, grabPickup3, scorePickup3;
+    private PathChain grabPickup1, backup, grabPickup1B, scorePickup1, ending;
     boolean foundMotif = false;
+    double velocity = 810;
 
     ArrayList<String> motif = new ArrayList<>();
     public void buildPaths() {
@@ -64,46 +63,28 @@ public class BackAutoBlue extends OpMode {
 
         /* This is our grabPickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
         grabPickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup1APose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup1APose.getHeading(), .1)
+                .addPath(new BezierLine(scorePose, pickup1Pose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup1Pose.getHeading(), .1)
                 .build();
-        grabPickup1A = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1APose, pickup1BPose))
-                .setLinearHeadingInterpolation(pickup1APose.getHeading(), pickup1BPose.getHeading(), .1)
+        backup = follower.pathBuilder()
+                .addPath(new BezierLine(pickup1Pose, pickup2Pose))
+                .setLinearHeadingInterpolation(pickup1Pose.getHeading(), pickup2Pose.getHeading(), .1)
                 .build();
         grabPickup1B = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1BPose, pickup1CPose))
-                .setLinearHeadingInterpolation(pickup1BPose.getHeading(), pickup1CPose.getHeading(), .1)
+                .addPath(new BezierLine(pickup2Pose, pickup1Pose))
+                .setLinearHeadingInterpolation(pickup2Pose.getHeading(), pickup1Pose.getHeading(), .1)
                 .build();
 
         /* This is our scorePickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
         scorePickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1CPose, scorePose))
-                .setLinearHeadingInterpolation(pickup1CPose.getHeading(), scorePose.getHeading())
+                .addPath(new BezierLine(pickup1Pose, scorePose))
+                .setLinearHeadingInterpolation(pickup1Pose.getHeading(), scorePose.getHeading())
                 .build();
 
-        /* This is our grabPickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        grabPickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup2Pose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup2Pose.getHeading(), .1)
-                .build();
 
-        /* This is our scorePickup2 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup2Pose, scorePose))
-                .setLinearHeadingInterpolation(pickup2Pose.getHeading(), scorePose.getHeading())
-                .build();
-
-        /* This is our grabPickup3 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        grabPickup3 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup3Pose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup3Pose.getHeading(), .1)
-                .build();
-
-        /* This is our scorePickup3 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePickup3 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup3Pose, scorePose))
-                .setLinearHeadingInterpolation(pickup3Pose.getHeading(), scorePose.getHeading())
+        ending = follower.pathBuilder()
+                .addPath(new BezierLine(scorePose, endingPose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), endingPose.getHeading())
                 .build();
     }
 
@@ -111,20 +92,19 @@ public class BackAutoBlue extends OpMode {
         switch (pathState) {
             case 0:
                 follower.followPath(scorePreload);
-                if(opmodeTimer.getElapsedTimeSeconds() >= 2)
+                if(pathTimer.getElapsedTime() > 450)
                 {
                     setPathState(1);
                 }
-
                 break;
             case 1:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                ShootAllBalls(2);
+                ShootAllBalls(2, grabPickup1, 0);
                 break;
             case 2:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
                 intake.setPower(-1);
-                if (pathTimer.getElapsedTime() > 2800 && slot == 0) {
+                if (pathTimer.getElapsedTime() > 250 && slot == 0) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sorter.setPower(1);
@@ -134,16 +114,16 @@ public class BackAutoBlue extends OpMode {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    if(pathTimer.getElapsedTime() > 3000)
+                    if(pathTimer.getElapsedTime() > 500)
                     {
-                        follower.followPath(grabPickup1A,true);
+                        follower.followPath(backup,true);
                         setPathState(3);
                     }
                 }
                 break;
             case 3:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-                if (pathTimer.getElapsedTime() > 1500 && slot == 1) {
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
+                if (pathTimer.getElapsedTime() > 500 && slot == 2) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sorter.setPower(1);
@@ -152,7 +132,7 @@ public class BackAutoBlue extends OpMode {
                 if(!follower.isBusy()) {
                     /* Score Sample */
 
-                    if(pathTimer.getElapsedTime() > 1750)
+                    if(pathTimer.getElapsedTime() > 750)
                     {
                         follower.followPath(grabPickup1B,true);
                         setPathState(4);
@@ -161,8 +141,7 @@ public class BackAutoBlue extends OpMode {
                 }
                 break;
             case 4:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
-                if (pathTimer.getElapsedTime() > 1500 && slot == 2) {
+                if (pathTimer.getElapsedTime() > 500 && slot == 2) {
                     sorter.setTargetPosition(sorter.getTargetPosition() + 128);
                     sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
                     sorter.setPower(1);
@@ -170,7 +149,7 @@ public class BackAutoBlue extends OpMode {
                 }
                 if(!follower.isBusy()) {
                     /* Grab Sample */
-                    if(pathTimer.getElapsedTime() > 1750)
+                    if(pathTimer.getElapsedTime() > 750)
                     {
                         sorter.setTargetPosition(sorter.getTargetPosition() + 64);
                         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
@@ -186,20 +165,77 @@ public class BackAutoBlue extends OpMode {
             case 5:
                 intake.setPower(0);
                 if(!follower.isBusy()) {
-                    ShootAllBalls(6);
+                    ShootAllBalls(6, ending, 0);
                 }
                 break;
             case 6:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup3Pose's position */
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
+                intake.setPower(-1);
+                if (pathTimer.getElapsedTime() > 250 && slot == 0) {
+                    sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+                    sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    sorter.setPower(1);
+                    slot = RotateMotorToNextSlot(sorter, slot);
+                }
                 if(!follower.isBusy()) {
                     /* Grab Sample */
 
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scorePickup3, true);
-                    setPathState(7);
+                    if(pathTimer.getElapsedTime() > 500)
+                    {
+                        follower.followPath(backup,true);
+                        setPathState(7);
+                    }
                 }
                 break;
             case 7:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup2Pose's position */
+                if (pathTimer.getElapsedTime() > 500 && slot == 2) {
+                    sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+                    sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    sorter.setPower(1);
+                    slot = RotateMotorToNextSlot(sorter, slot);
+                }
+                if(!follower.isBusy()) {
+                    /* Score Sample */
+
+                    if(pathTimer.getElapsedTime() > 750)
+                    {
+                        follower.followPath(grabPickup1B,true);
+                        setPathState(8);
+                    }
+
+                }
+                break;
+            case 8:
+                if (pathTimer.getElapsedTime() > 500 && slot == 2) {
+                    sorter.setTargetPosition(sorter.getTargetPosition() + 128);
+                    sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    sorter.setPower(1);
+                    slot = RotateMotorToNextSlot(sorter, slot);
+                }
+                if(!follower.isBusy()) {
+                    /* Grab Sample */
+                    if(pathTimer.getElapsedTime() > 750)
+                    {
+                        sorter.setTargetPosition(sorter.getTargetPosition() + 64);
+                        sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                        sorter.setPower(1);
+                        slot = RotateMotorToNextSlot(sorter, slot);
+
+                        /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                        follower.followPath(scorePickup1,true);
+                        setPathState(9);
+                    }
+                }
+                break;
+            case 9:
+                intake.setPower(0);
+                if(!follower.isBusy()) {
+                    ShootAllBalls(10, ending, 0);
+                }
+                break;
+            case 10:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Set the state to a Case we won't use or define, so it just stops running an new paths */
@@ -225,6 +261,24 @@ public class BackAutoBlue extends OpMode {
         follower.update();
         autonomousPathUpdate();
 
+        LLResult result = limelight.getLatestResult();
+        if(result != null) {
+            if (result.isValid()) {
+                //Goes through all the Tags
+                for (LLResultTypes.FiducialResult tag : result.getFiducialResults()) {
+                    int tagId = tag.getFiducialId();
+                    //Checks if the tag is not the Obelisk
+                    if (tagId != 21 && tagId != 22 && tagId != 23) {
+                        double a = result.getTa();//Tag Area
+                        //Auto-Velocity Code
+                        velocity = 850 - ((195 * a) - 20);
+                    }
+                }
+            }
+        }
+
+        topMotor.setVelocity(velocity);
+        bottomMotor.setVelocity(velocity);
         // Feedback to Driver Hub for debugging
         telemetry.addData("path state", pathState);
         telemetry.addData("x", follower.getPose().getX());
@@ -246,6 +300,7 @@ public class BackAutoBlue extends OpMode {
         buildPaths();
         follower.setStartingPose(startPose);
 
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
         topMotor = hardwareMap.get(DcMotorEx.class, "top");
         bottomMotor = hardwareMap.get(DcMotorEx.class, "bottom");
         outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
@@ -258,6 +313,9 @@ public class BackAutoBlue extends OpMode {
         topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
         bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
+
+        limelight.pipelineSwitch(0);
+        limelight.start();
     }
 
     /** This method is called continuously after Init while waiting for "play". **/
@@ -272,8 +330,8 @@ public class BackAutoBlue extends OpMode {
         setPathState(0);
         outtakeFeeder.setPosition(0);
         //Applies power to the shooter
-        topMotor.setVelocity(810);
-        bottomMotor.setVelocity(810);
+        topMotor.setVelocity(velocity);
+        bottomMotor.setVelocity(velocity);
         sorter.setTargetPosition(0);
         sorter.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         sorter.setPower(1);
@@ -334,7 +392,7 @@ public class BackAutoBlue extends OpMode {
     }
 
     //Shoot All Balls
-    public void ShootAllBalls(int nextPath) {
+    public void ShootAllBalls(int nextPath, PathChain nextPathChain, int ballIndexId) {
         if(ableToResetTimer)
         {
             pathTimer.resetTimer();
@@ -342,30 +400,21 @@ public class BackAutoBlue extends OpMode {
             nextSlot = true;
         }
 
-        if(pathTimer.getElapsedTime() > 5750)
+        if(pathTimer.getElapsedTime() > 4450)
         {
+            sorter.setTargetPosition(sorter.getTargetPosition() + 64);
             ableToResetTimer = true;
-            follower.followPath(grabPickup1,true);
+            follower.followPath(nextPathChain,true);
             setPathState(nextPath);
-        }  else if (((pathTimer.getElapsedTime() > 1600 && pathTimer.getElapsedTime() < 2250) || (pathTimer.getElapsedTime() > 1600 + secondShot && pathTimer.getElapsedTime() < 2250 + secondShot) || (pathTimer.getElapsedTime() > 1600 + thirdShot && pathTimer.getElapsedTime() < 2250 + thirdShot)) && nextSlot) {
-            if((pathTimer.getElapsedTime() > 4750))
-            {
-                sorter.setTargetPosition(sorter.getTargetPosition() + 64);
-            }
-            else
-            {
-                sorter.setTargetPosition(sorter.getTargetPosition() + 128);
-            }
-
+        }  else if (((pathTimer.getElapsedTime() > 1400 && pathTimer.getElapsedTime() < 2050) || (pathTimer.getElapsedTime() > 1400 + secondShot && pathTimer.getElapsedTime() < 2050 + secondShot)) && nextSlot) {
+            sorter.setTargetPosition(sorter.getTargetPosition() + 128);
             nextSlot = false;
             slot = RotateMotorToNextSlot(sorter, slot);
-        } else if ((pathTimer.getElapsedTime() > 1050 && pathTimer.getElapsedTime() < 1600) || (pathTimer.getElapsedTime() > 1050 + secondShot && pathTimer.getElapsedTime() < 1600 + secondShot) || (pathTimer.getElapsedTime() > 1050 + thirdShot && pathTimer.getElapsedTime() < 1600 + thirdShot)) {
+        } else if ((pathTimer.getElapsedTime() > 850 && pathTimer.getElapsedTime() < 1400) || (pathTimer.getElapsedTime() > 850 + secondShot && pathTimer.getElapsedTime() < 1400 + secondShot) || (pathTimer.getElapsedTime() > 850 + thirdShot && pathTimer.getElapsedTime() < 1400 + thirdShot)) {
             outtakeFeeder.setPosition(0);
-        } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 1050) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 1050 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 1050 + thirdShot)) {
-            outtakeFeeder.setPosition(.75);
+        } else if ((pathTimer.getElapsedTime() > 500 && pathTimer.getElapsedTime() < 850) || (pathTimer.getElapsedTime() > 500 + secondShot && pathTimer.getElapsedTime() < 850 + secondShot) || (pathTimer.getElapsedTime() > 500 + thirdShot && pathTimer.getElapsedTime() < 850 + thirdShot)) {
+            outtakeFeeder.setPosition(1);
             nextSlot = true;
         }
     }
-
-
 }

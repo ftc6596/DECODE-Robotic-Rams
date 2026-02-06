@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -13,7 +14,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import java.util.ArrayList;
 
 import kotlin.Unit;
-
+@Disabled
 @TeleOp(name="PIDFSorter", group="Linear OpMode")
 public class PIDFSorter extends LinearOpMode {
     //Electronic Variables

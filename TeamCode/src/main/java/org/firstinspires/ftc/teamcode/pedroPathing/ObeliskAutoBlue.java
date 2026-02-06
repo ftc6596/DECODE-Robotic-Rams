@@ -203,7 +203,7 @@ public class ObeliskAutoBlue extends OpMode {
                         sorter.setPower(1);
                         slot = RotateMotorToNextSlot(sorter, slot);
                         Sort(sorter, motifId, 1);
-                        intake.setPower(0);
+                        intake.setPower(1);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup1,true);
                         setPathState(6);
@@ -212,6 +212,7 @@ public class ObeliskAutoBlue extends OpMode {
                 break;
             case 6:
                 if(!follower.isBusy()) {
+                    intake.setPower(0);
                     ShootAllBalls(7, grabPickup2, 1);
                     slot = 0;
                 }
@@ -264,7 +265,7 @@ public class ObeliskAutoBlue extends OpMode {
                         sorter.setPower(1);
                         Sort(sorter, motifId, 0);
                         slot = RotateMotorToNextSlot(sorter, slot);
-                        intake.setPower(0);
+                        intake.setPower(1);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup2,true);
                         setPathState(10);
@@ -274,6 +275,7 @@ public class ObeliskAutoBlue extends OpMode {
             case 10:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
+                    intake.setPower(0);
                     ShootAllBalls(11, ending, 0);
                 }
                 break;
@@ -486,6 +488,4 @@ public class ObeliskAutoBlue extends OpMode {
             nextSlot = true;
         }
     }
-
-
 }

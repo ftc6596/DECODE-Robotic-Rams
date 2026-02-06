@@ -41,14 +41,14 @@ public class ObeliskAutoRed extends OpMode {
     private long thirdShot = secondShot * 2;
     private int pathState;
 
-    private final Pose startPose = new Pose(118, 128, Math.toRadians(270)); // Start Pose of our robot.
+    private final Pose startPose = new Pose(118.5, 128, Math.toRadians(270)); // Start Pose of our robot.
     private final Pose ReadMotifPose = new Pose(91, 86, Math.toRadians(270));
     private final Pose scorePose = new Pose(92, 84, Math.toRadians(229)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose pickup1APose = new Pose(116.5, 87, Math.toRadians(0));
     private final Pose pickup1BPose = new Pose(122, 87, Math.toRadians(0));
     private final Pose pickup1CPose = new Pose(134, 87, Math.toRadians(0));
     private final Pose pickup2APose = new Pose(116.5, 63, Math.toRadians(0));
-    private final Pose pickup2BPose = new Pose(122, 63, Math.toRadians(0));
+    private final Pose pickup2BPose = new Pose(123, 63, Math.toRadians(0));
     private final Pose pickup2CPose = new Pose(134, 63, Math.toRadians(0));
     private final Pose endingPose = new Pose(130, 70, Math.toRadians(270)); // Middle (Second Set) of Artifacts from the Spike Mark.
 
@@ -202,7 +202,7 @@ public class ObeliskAutoRed extends OpMode {
                         sorter.setPower(1);
                         slot = RotateMotorToNextSlot(sorter, slot);
                         Sort(sorter, motifId, 1);
-                        intake.setPower(0);
+                        intake.setPower(1);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup1,true);
                         setPathState(6);
@@ -211,6 +211,7 @@ public class ObeliskAutoRed extends OpMode {
                 break;
             case 6:
                 if(!follower.isBusy()) {
+                    intake.setPower(0);
                     ShootAllBalls(7, grabPickup2, 1);
                     slot = 0;
                 }
@@ -263,7 +264,7 @@ public class ObeliskAutoRed extends OpMode {
                         sorter.setPower(1);
                         Sort(sorter, motifId, 0);
                         slot = RotateMotorToNextSlot(sorter, slot);
-                        intake.setPower(0);
+                        intake.setPower(1);
                         /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
                         follower.followPath(scorePickup2,true);
                         setPathState(10);
@@ -273,6 +274,7 @@ public class ObeliskAutoRed extends OpMode {
             case 10:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
+                    intake.setPower(0);
                     ShootAllBalls(11, ending, 0);
                 }
                 break;

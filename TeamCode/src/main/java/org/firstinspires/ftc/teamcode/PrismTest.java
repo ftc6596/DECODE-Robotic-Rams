@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -10,9 +11,10 @@ import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
 
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
-
+@Disabled
 @TeleOp(name="PrismTest", group="Linear OpMode")
 public class PrismTest extends LinearOpMode {
+
     private GoBildaPrismDriver prismDriver;
     private RevColorSensorV3 colorsensor;
 
