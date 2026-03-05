@@ -4,6 +4,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -16,9 +17,9 @@ import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver;
 import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
 
 import java.util.ArrayList;
-
-@TeleOp(name="MORTARTeleopLEDs", group="Linear OpMode")
-public class MORTARTeleopLEDs extends LinearOpMode {
+@Disabled
+@TeleOp(name="StemNight", group="Linear OpMode")
+public class StemNightCode extends LinearOpMode {
     //Electronic Variables
     //Extras
     private Limelight3A limelight;
@@ -109,74 +110,14 @@ public class MORTARTeleopLEDs extends LinearOpMode {
         outtakeFeeder.setPosition(0);
         updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(1), currentartifacts.get(2), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, false, false);
         while(opModeIsActive()) {
-            //LimeLight3A Uses
-            LLResult result = limelight.getLatestResult();
-            if(result != null) {
-                if (result.isValid()) {
-                    //Goes through all the Tags
-                    for(LLResultTypes.FiducialResult tag : result.getFiducialResults())
-                    {
-                        int tagId = tag.getFiducialId();
-                        //Checks if the tag is not the Obelisk
-                        double x = result.getTx();//Tag X Position
-                        double a = result.getTa();//Tag Area
-                        telemetry.addData("X: ", x);
-                        //Auto Aiming Code
-                        if(autoAiming)
-                        {
-                            if(x > 4)
-                            {
-                                TurnLeft(LFront, RFront, LBack, RBack, x);
-                            } else if (x < -4) {
-                                TurnRight(LFront, RFront, LBack, RBack, x);
-                            } else {
-                                Stop(LFront, RFront, LBack, RBack);
-                                updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(0), currentartifacts.get(0), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, true, false);
-                                sleep(25);
-                                UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                                autoAiming = false;
-                            }
-                        }
-                        velocity = 1375 - ((225 * a) - 30);
-                    }
-                }
-                else if (autoAiming)
-                {
-                    //Stops if there is no April Tag
-                    Stop(LFront, RFront, LBack, RBack);
-                    updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(0), currentartifacts.get(0), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, false, true);
-                    sleep(25);
-                    UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                    autoAiming = false;
-                }
-                else {
-                    //Manual Flywheel speed just in case ;)
-                    if (gamepad2.left_trigger != 0)
-                    {
-                        velocity = 1430;
-                    }
-                    else
-                    {
-                        velocity = 780;
-                    }
-                }
-            }
-            else if (autoAiming)
+            //Manual Flywheel speed just in case ;)
+            if (gamepad2.left_trigger != 0)
             {
-                //Stops if there is no April Tag
-                Stop(LFront, RFront, LBack, RBack);
-                autoAiming = false;
+                velocity = 3000;
             }
-            else {
-                //Manual Flywheel speed just in case ;)
-                if (gamepad2.left_trigger != 0)
-                {
-                    velocity = 1430;
-                }
-                else
-                {
-                    velocity = 780;
-                }
+            else
+            {
+                velocity = 780;
             }
             //Color/LEDs
             String color = "None";
@@ -221,40 +162,6 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                     }
                 }
             }
-            //Driving
-            if(!autoAiming)
-            {
-                ApplyInputToMotors(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, driveMode, LFront, RFront, LBack, RBack);
-            }
-            //Aiming
-            if(ableToAim)
-            {
-                if(gamepad1.left_trigger != 0 && !autoAiming)
-                {
-                    ableToAim = false;
-
-                    autoAiming = true;
-                } else if (gamepad1.left_trigger != 0 && autoAiming) {
-                    ableToAim = false;
-
-                    autoAiming = false;
-                }
-            }
-            else
-            {
-                if(gamepad1.left_trigger == 0)
-                {
-                    ableToAim = true;
-                }
-            }
-            //Shooter
-            if (gamepad2.a)
-            {
-                currentslot = ShootAllBalls(this, outtakeFeeder, sorter, currentslot, currentartifacts);
-                SorterMode = "Intake";
-                setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-            }
             //Feed Shooter
             if (!sorter.isBusy())
             {
@@ -292,36 +199,6 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                 if(!gamepad2.x)
                 {
                     OnOffShooter = false;
-                }
-            }
-            //Intake
-            if(gamepad1.right_bumper)
-            {
-                intake.setPower(-1);
-            } else if (gamepad1.left_bumper) {
-                intake.setPower(1);
-            } else
-            {
-                intake.setPower(0);
-            }
-
-            //Change Drive Mode
-            if(ableToSwitchMode)
-            {
-                if(gamepad1.a && driveMode.equals("FAST"))
-                {
-                    ableToSwitchMode = false;
-                    driveMode = "SLOW";
-                } else if (gamepad1.a && driveMode.equals("SLOW")) {
-                    ableToSwitchMode = false;
-                    driveMode = "FAST";
-                }
-            }
-            else
-            {
-                if(!gamepad1.a)
-                {
-                    ableToSwitchMode = true;
                 }
             }
 
@@ -397,8 +274,21 @@ public class MORTARTeleopLEDs extends LinearOpMode {
             //Applies power to the shooter
             if(shooterOn)
             {
-                topMotor.setVelocity(velocity);
-                bottomMotor.setVelocity(velocity);
+                if(gamepad2.left_bumper)
+                {
+                    topMotor.setVelocity(velocity*3);
+                    bottomMotor.setVelocity(200);
+                }
+                else if(gamepad2.right_bumper)
+                {
+                    topMotor.setVelocity(200);
+                    bottomMotor.setVelocity(velocity*3);
+                }
+                else {
+                    topMotor.setVelocity(velocity);
+                    bottomMotor.setVelocity(velocity);
+                }
+
             }
             else
             {//Turn off shooter
@@ -456,8 +346,8 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     //Turn the Robot Left
     public static void TurnRight(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
-        double power = .175;
-        if(x > 10.0)
+        double power = .15;
+        if(x > 35.0)
         {
             power = .3125;
         }
@@ -471,8 +361,8 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     //Turn the Robot Right
     public static void TurnLeft(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
-        double power = .175;
-        if(x < -10.0)
+        double power = .15;
+        if(x > 35.0)
         {
             power = .3125;
         }

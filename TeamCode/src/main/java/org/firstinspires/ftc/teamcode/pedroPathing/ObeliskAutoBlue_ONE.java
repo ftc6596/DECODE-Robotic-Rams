@@ -25,8 +25,8 @@ import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
 
 import java.util.ArrayList;
 
-@Autonomous(name="ObeliskAutoBlue", group="Linear OpMode")
-public class ObeliskAutoBlue extends OpMode {
+@Autonomous(name="ObeliskAutoBlue_ONE", group="Linear OpMode")
+public class ObeliskAutoBlue_ONE extends OpMode {
     //Electronic Variables
     //Extra
     private Limelight3A limelight;
@@ -73,13 +73,14 @@ public class ObeliskAutoBlue extends OpMode {
     private final Pose pickup1EndPose = new Pose(13, 80, Math.toRadians(180));
     private final Pose pickup2SetUpPose = new Pose(40, 56, Math.toRadians(180));
     private final Pose pickup2EndPose = new Pose(5, 57, Math.toRadians(180));
-    private final Pose notOpenGatePose = new Pose(15, 57, Math.toRadians(180));
+    private final Pose OpenGatePose = new Pose(10, 60, Math.toRadians(270));
+    private final Pose NotPushBall = new Pose(40, 60, Math.toRadians(270));
     private final Pose endingPose = new Pose(32, 66, Math.toRadians(270)); // Middle (Second Set) of Artifacts from the Spike Mark.
     private final Pose pickup3Pose = new Pose(14, 42, Math.toRadians(180)); // Lowest (Third Set) of Artifacts from the Spike Mark.
 
     private Path readMotif;
     private Path scorePreload;
-    private PathChain  setup1, pickup1, scorePickup1, setup2, pickup2, notOpenGate, scorePickup2, ending;
+    private PathChain  setup1, pickup1, scorePickup1, setup2, pickup2, openGate, notPushBall, scorePickup2, ending;
     boolean foundMotif = false;
     int motifId = -1;
     ArrayList<String> motif = new ArrayList<>();
@@ -95,39 +96,44 @@ public class ObeliskAutoBlue extends OpMode {
         scorePreload.setLinearHeadingInterpolation(ReadMotifPose.getHeading(), scorePose.getHeading());
         /* This is our grabPickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
         setup1 = follower.pathBuilder()
+                .addPath(new BezierLine(scorePose, pickup2SetUpPose))
+                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup2SetUpPose.getHeading(), .1)
+                .build();
+        pickup1 = follower.pathBuilder()
+                .addPath(new BezierLine(pickup2SetUpPose, pickup2EndPose))
+                .setLinearHeadingInterpolation(pickup2SetUpPose.getHeading(), pickup2EndPose.getHeading())
+                .setVelocityConstraint(4.0)
+                .build();
+
+        /* This is our scorePickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
+        openGate = follower.pathBuilder()
+                .addPath(new BezierLine(pickup2EndPose, OpenGatePose))
+                .setLinearHeadingInterpolation(pickup2EndPose.getHeading(), OpenGatePose.getHeading(), .2)
+                .build();
+        notPushBall = follower.pathBuilder()
+                .addPath(new BezierLine(OpenGatePose, NotPushBall))
+                .setLinearHeadingInterpolation(OpenGatePose.getHeading(), NotPushBall.getHeading())
+                .build();
+        scorePickup1 = follower.pathBuilder()
+                .addPath(new BezierLine(NotPushBall, scorePose))
+                .setLinearHeadingInterpolation(NotPushBall.getHeading(), scorePose.getHeading())
+                .build();
+
+        setup2 = follower.pathBuilder()
                 .addPath(new BezierLine(scorePose, pickup1SetUpPose))
                 .setLinearHeadingInterpolation(scorePose.getHeading(), pickup1SetUpPose.getHeading(), .1)
                 .build();
-        pickup1 = follower.pathBuilder()
+        pickup2 = follower.pathBuilder()
                 .addPath(new BezierLine(pickup1SetUpPose, pickup1EndPose))
                 .setLinearHeadingInterpolation(pickup1SetUpPose.getHeading(), pickup1EndPose.getHeading())
                 .setVelocityConstraint(4.0)
                 .build();
 
-        /* This is our scorePickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
-        scorePickup1 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup1EndPose, scorePose))
-                .setLinearHeadingInterpolation(pickup1EndPose.getHeading(), scorePose.getHeading())
-                .build();
-
-        setup2 = follower.pathBuilder()
-                .addPath(new BezierLine(scorePose, pickup2SetUpPose))
-                .setLinearHeadingInterpolation(scorePose.getHeading(), pickup2SetUpPose.getHeading(), .1)
-                .build();
-        pickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(pickup2SetUpPose, pickup2EndPose))
-                .setLinearHeadingInterpolation(pickup2SetUpPose.getHeading(), pickup2EndPose.getHeading())
-                .setVelocityConstraint(4.0)
-                .build();
-        notOpenGate = follower.pathBuilder()
-                .addPath(new BezierLine(pickup2EndPose, notOpenGatePose))
-                .setLinearHeadingInterpolation(pickup2EndPose.getHeading(), notOpenGatePose.getHeading())
-                .build();
 
         /* This is our scorePickup1 PathChain. We are using a single path with a BezierLine, which is a straight line. */
         scorePickup2 = follower.pathBuilder()
-                .addPath(new BezierLine(notOpenGatePose, scorePose))
-                .setLinearHeadingInterpolation(notOpenGatePose.getHeading(), scorePose.getHeading())
+                .addPath(new BezierLine(pickup1EndPose, scorePose))
+                .setLinearHeadingInterpolation(pickup1EndPose.getHeading(), scorePose.getHeading())
                 .build();
 
         /* This is our grabPickup3 PathChain. We are using a single path with a BezierLine, which is a straight line. */
@@ -192,7 +198,7 @@ public class ObeliskAutoBlue extends OpMode {
                 if(!follower.isBusy() && pathTimer.getElapsedTime() >= 2000) {
                     intake.setPower(1);
                     /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(scorePickup1,true);
+                    follower.followPath(openGate,false);
                     currentslot = RotateMotorToNextHalfSlotEncoder(sorter, currentslot);
                     SorterMode = "Shooting";
                     setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
@@ -203,6 +209,62 @@ public class ObeliskAutoBlue extends OpMode {
                 }
                 break;
             case 5:
+                if(!follower.isBusy()) {
+                    intake.setPower(1);
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                    follower.followPath(notPushBall,true);
+                    ableToResetStayTimer = true;
+                    setPathState(6);
+                }
+                break;
+            case 6:
+                if(ableToResetStayTimer)
+                {
+                    pathTimer.resetTimer();
+                    ableToResetStayTimer = false;
+                }
+                if(!follower.isBusy() && pathTimer.getElapsedTime() >= 1500) {
+                    intake.setPower(1);
+                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
+                    follower.followPath(scorePickup1,true);
+                    ableToResetStayTimer = true;
+                    setPathState(7);
+                }
+                break;
+            case 7:
+                if(!follower.isBusy()) {
+                    intake.setPower(0);
+                    ShootAllBalls(8, setup2, 6);
+                }
+                break;
+            case 8:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
+                intake.setPower(-1);
+                if(!follower.isBusy()) {
+                    follower.followPath(pickup2,true);
+                    sorted = false;
+                    setPathState(9);
+                }
+                break;
+            case 9:
+                if(ableToResetStayTimer)
+                {
+                    pathTimer.resetTimer();
+                    ableToResetStayTimer = false;
+                }
+                if(!follower.isBusy() && pathTimer.getElapsedTime() >= 2000) {
+                    intake.setPower(1);
+                    follower.followPath(scorePickup2,true);
+                    currentslot = RotateMotorToNextHalfSlotEncoder(sorter, currentslot);
+                    SorterMode = "Shooting";
+                    setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
+                    UpdateLEDs(currentArtifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
+                    ableToResetStayTimer = true;
+                    setPathState(10);
+                }
+                break;
+            case 10:
+                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!sorted)
                 {
                     currentslot = Sort(sorter, motifId, 1, currentslot);
@@ -211,58 +273,10 @@ public class ObeliskAutoBlue extends OpMode {
                 }
                 if(!follower.isBusy()) {
                     intake.setPower(0);
-                    ShootAllBalls(6, setup2, 6);
+                    ShootAllBalls(11, ending, 0);
                 }
                 break;
-            case 6:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the pickup1Pose's position */
-                intake.setPower(-1);
-                if(!follower.isBusy()) {
-                    follower.followPath(pickup2,true);
-                    setPathState(7);
-                }
-                break;
-            case 7:
-                if(ableToResetStayTimer)
-                {
-                    pathTimer.resetTimer();
-                    ableToResetStayTimer = false;
-                }
-                if(!follower.isBusy() && pathTimer.getElapsedTime() >= 2000) {
-                    intake.setPower(1);
-                    /* Since this is a pathChain, we can have Pedro hold the end point while we are scoring the sample */
-                    follower.followPath(notOpenGate,false);
-                    currentslot = RotateMotorToNextHalfSlotEncoder(sorter, currentslot);
-                    SorterMode = "Shooting";
-                    setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                    UpdateLEDs(currentArtifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                    sorted = false;
-                    ableToResetStayTimer = true;
-                    setPathState(8);
-                }
-                break;
-            case 8:
-                if(!sorted)
-                {
-                    currentslot = Sort(sorter, motifId, 0, currentslot);
-                    UpdateLEDs(currentArtifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                    sorted = true;
-                }
-                if(!follower.isBusy()) {
-                    intake.setPower(0);
-                    follower.followPath(scorePickup2,true);
-                    setPathState(9);
-                }
-                break;
-            case 9:
-                /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
-
-                if(!follower.isBusy()) {
-                    intake.setPower(0);
-                    ShootAllBalls(10, ending, 0);
-                }
-                break;
-            case 10:
+            case 11:
                 /* This case checks the robot's position and will wait until the robot position is close (1 inch away) from the scorePose's position */
                 if(!follower.isBusy()) {
                     /* Set the state to a Case we won't use or define, so it just stops running an new paths */

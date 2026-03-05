@@ -3,22 +3,26 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.hardware.rev.RevColorSensorV3;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.teamcode.Prism.Color;
 import org.firstinspires.ftc.teamcode.Prism.GoBildaPrismDriver;
 import org.firstinspires.ftc.teamcode.Prism.PrismAnimations;
 
 import java.util.ArrayList;
-
-@TeleOp(name="MORTARTeleopLEDs", group="Linear OpMode")
-public class MORTARTeleopLEDs extends LinearOpMode {
+@Disabled
+@TeleOp(name="MORTARTeleopLEDsCS", group="Linear OpMode")
+public class MORTARTeleopLEDsCS extends LinearOpMode {
     //Electronic Variables
     //Extras
     private Limelight3A limelight;
@@ -35,7 +39,8 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     private GoBildaPrismDriver prismDriver;
     private RevColorSensorV3 colorsensor;
     //Servos
-    private Servo outtakeFeeder;
+    private CRServo outtakeFeeder;
+    private Rev2mDistanceSensor feederSensor;
     //Animations
     PrismAnimations.Solid slot0 = new PrismAnimations.Solid(Color.YELLOW);
     PrismAnimations.Solid slot1 = new PrismAnimations.Solid(Color.YELLOW);
@@ -50,7 +55,8 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     public void runOpMode() throws InterruptedException {
         //References to Electronics
         //Servos
-        outtakeFeeder = hardwareMap.get(Servo.class, "feeder");
+        outtakeFeeder = hardwareMap.get(CRServo.class, "feeder");
+        feederSensor = hardwareMap.get(Rev2mDistanceSensor.class, "distancesensor");
         //Motors
         topMotor = hardwareMap.get(DcMotorEx.class, "top");
         bottomMotor = hardwareMap.get(DcMotorEx.class, "bottom");
@@ -82,6 +88,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
         String SorterMode = "Intake";
         //Numbers
         double velocity = 800;
+        double lastDistance = 0;
         int currentslot = 0;
         //Array
         ArrayList<String> currentartifacts = new ArrayList<String>(3);
@@ -102,12 +109,12 @@ public class MORTARTeleopLEDs extends LinearOpMode {
         setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
         waitForStart();
         //PIDF Coefficients
-        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.1,0,0,14));
-        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.1,0,0,14));
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(15,0,0,13.895));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(15,0,0,13.895));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
         //Get the flicker set
-        outtakeFeeder.setPosition(0);
-        updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(1), currentartifacts.get(2), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, false, false);
+        outtakeFeeder.setPower(0);
+        updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(1), currentartifacts.get(2), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
         while(opModeIsActive()) {
             //LimeLight3A Uses
             LLResult result = limelight.getLatestResult();
@@ -118,46 +125,43 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                     {
                         int tagId = tag.getFiducialId();
                         //Checks if the tag is not the Obelisk
-                        double x = result.getTx();//Tag X Position
-                        double a = result.getTa();//Tag Area
-                        telemetry.addData("X: ", x);
-                        //Auto Aiming Code
-                        if(autoAiming)
+                        if (!(tagId == 21 || tagId == 22 || tagId == 23))
                         {
-                            if(x > 4)
+                            double x = result.getTx();//Tag X Position
+                            double a = result.getTa();//Tag Area
+                            //Auto Aiming Code
+                            if(autoAiming)
                             {
-                                TurnLeft(LFront, RFront, LBack, RBack, x);
-                            } else if (x < -4) {
-                                TurnRight(LFront, RFront, LBack, RBack, x);
-                            } else {
-                                Stop(LFront, RFront, LBack, RBack);
-                                updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(0), currentartifacts.get(0), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, true, false);
-                                sleep(25);
-                                UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
-                                autoAiming = false;
+                                if(x > 1.1)
+                                {
+                                    TurnLeft(LFront, RFront, LBack, RBack, x);
+                                } else if (x < -1.1) {
+                                    TurnRight(LFront, RFront, LBack, RBack, x);
+                                } else {
+                                    Stop(LFront, RFront, LBack, RBack);
+                                    autoAiming = false;
+                                }
                             }
+                            //Auto-Velocity Code
+                            velocity = 850 - ((195 * a) - 40);
                         }
-                        velocity = 1375 - ((225 * a) - 30);
                     }
                 }
                 else if (autoAiming)
                 {
                     //Stops if there is no April Tag
                     Stop(LFront, RFront, LBack, RBack);
-                    updateleds(prismDriver, currentartifacts.get(0), currentartifacts.get(0), currentartifacts.get(0), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, false, true);
-                    sleep(25);
-                    UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
                     autoAiming = false;
                 }
                 else {
                     //Manual Flywheel speed just in case ;)
                     if (gamepad2.left_trigger != 0)
                     {
-                        velocity = 1430;
+                        velocity = 830;
                     }
                     else
                     {
-                        velocity = 780;
+                        velocity = 635;
                     }
                 }
             }
@@ -171,11 +175,11 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                 //Manual Flywheel speed just in case ;)
                 if (gamepad2.left_trigger != 0)
                 {
-                    velocity = 1430;
+                    velocity = 830;
                 }
                 else
                 {
-                    velocity = 780;
+                    velocity = 635;
                 }
             }
             //Color/LEDs
@@ -189,7 +193,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
             double bPercent = (double) b /rgb;
             if (SorterMode.equals("Intake"))
             {
-                if((sorter.getCurrentPosition() > sorter.getTargetPosition() - 8 && sorter.getCurrentPosition() < sorter.getTargetPosition() + 8) && (currentartifacts.get(0).equals("none") || currentartifacts.get(1).equals("none") ||currentartifacts.get(2).equals("none")))
+                if((sorter.getCurrentPosition() > sorter.getTargetPosition() - 10 && sorter.getCurrentPosition() < sorter.getTargetPosition() + 10) && (currentartifacts.get(0).equals("none") || currentartifacts.get(1).equals("none") ||currentartifacts.get(2).equals("none")))
                 {
                     if((rPercent > .12 && rPercent < .25) && (gPercent > .4 && gPercent < .65) && (bPercent > .3 && bPercent < .5) && !currentartifacts.get(currentslot).equals("green")){
                         color = "green";
@@ -256,27 +260,33 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                 UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
             }
             //Feed Shooter
-            if (!sorter.isBusy())
-            {
-                if (gamepad2.right_trigger > 0) {
-                    outtakeFeeder.setPosition(1);
-
-                    if(SorterMode.equals("Shooting") && !currentartifacts.get(currentslot).equals("none"))
+            if (gamepad2.right_trigger > 0) {
+                outtakeFeeder.setPower(.2);
+                if(((lastDistance-feederSensor.getDistance(DistanceUnit.INCH)) > .5 || feederSensor.getDistance(DistanceUnit.INCH) < 3.2) && SorterMode.equals("Shooting"))
+                {
+                    if(!currentartifacts.get(currentslot).equals("none"))
                     {
                         currentartifacts.set(currentslot, "none");
+                        currentslot = RotateMotorToNextSlotEncoder(sorter, currentslot, false);
                         UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
+                        nextSlot = false;
                     }
-                } else {
-                    outtakeFeeder.setPosition(0);
+                    else if((currentartifacts.get(0).equals("none") && currentartifacts.get(1).equals("none") && currentartifacts.get(2).equals("none")))
+                    {
+                        currentslot = RotateMotorToNextHalfSlotEncoder(sorter, currentslot);
+                        SorterMode = "Intake";
+                        setupleds(SorterMode, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
+                        UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
+                        nextSlot = false;
+                    }
+                } else if (feederSensor.getDistance(DistanceUnit.INCH) > 3.0) {
+                    nextSlot = true;
                 }
-            }
-            else
-            {
-                if (gamepad2.right_trigger > 0) {
-                    outtakeFeeder.setPosition(1);
-                } else {
-                    outtakeFeeder.setPosition(0);
-                }
+
+            }else if (gamepad2.left_trigger > 0) {
+                outtakeFeeder.setPower(-.25);
+            } else {
+                outtakeFeeder.setPower(0);
             }
             //Shooter On Off
             if(!OnOffShooter)
@@ -414,8 +424,11 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                 }
             }
 
-            System.out.println("Velocity: TOP:" + topMotor.getVelocity() + ", BOTTOM:"+bottomMotor.getVelocity());
+            lastDistance = feederSensor.getDistance(DistanceUnit.INCH);
+
+
             //Telemetry
+            telemetry.addData("Distance: ", feederSensor.getDistance(DistanceUnit.INCH));
             //Shooter
             telemetry.addData("Velocity: ", velocity);
             telemetry.addData("Shooter On: ", shooterOn);
@@ -456,11 +469,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     //Turn the Robot Left
     public static void TurnRight(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
-        double power = .175;
-        if(x > 10.0)
-        {
-            power = .3125;
-        }
+        double power = .12;
         //Applying Power the Drive Train
         LFront.setPower(power);
         RFront.setPower(-power);
@@ -471,11 +480,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     //Turn the Robot Right
     public static void TurnLeft(DcMotor LFront, DcMotor RFront, DcMotor LBack, DcMotor RBack, double x)
     {
-        double power = .175;
-        if(x < -10.0)
-        {
-            power = .3125;
-        }
+        double power = .12;
         //Applying Power the Drive Train
         LFront.setPower(-power);
         RFront.setPower(power);
@@ -575,36 +580,22 @@ public class MORTARTeleopLEDs extends LinearOpMode {
         }
         return nextSlot;
     }
-    //Get Distance with AprilTag
-    public double getDistance(double area)
-    {
-        double scale = 30665.95;
-        double distance = (scale/area);
-        return distance;
-    }
     //Shoots all three balls in sequential order
-    public static int ShootAllBalls(LinearOpMode opmode, Servo outtakeFeeder, DcMotor sorter, int slot, ArrayList<String> artifacts)
+    public static int ShootAllBalls(LinearOpMode opmode, CRServo outtakeFeeder, DcMotor sorter, int slot, ArrayList<String> artifacts)
     {
         artifacts.set(slot, "none");
-        outtakeFeeder.setPosition(1);
-        opmode.sleep(260);
-        outtakeFeeder.setPosition(0);
+        outtakeFeeder.setPower(1);
         opmode.sleep(250);
         slot = RotateMotorToNextSlotEncoder(sorter, slot, false);
         artifacts.set(slot, "none");
         opmode.sleep(450);
-        outtakeFeeder.setPosition(1);
-        opmode.sleep(260);
-        outtakeFeeder.setPosition(0);
         opmode.sleep(250);
         slot = RotateMotorToNextSlotEncoder(sorter, slot, false);
         artifacts.set(slot, "none");
         opmode.sleep(450);
-        outtakeFeeder.setPosition(1);
-        opmode.sleep(260);
-        outtakeFeeder.setPosition(0);
         opmode.sleep(250);
         slot = RotateMotorToNextHalfSlotEncoder(sorter, slot);
+        outtakeFeeder.setPower(0);
         return slot;
     }
     //Sets up the LEDs per the intake mode
@@ -673,118 +664,72 @@ public class MORTARTeleopLEDs extends LinearOpMode {
         }
     }
     //The logic to Update the LEDs
-    public static void updateleds(GoBildaPrismDriver prismDriver, String slot0Color, String slot1Color, String slot2Color, PrismAnimations.Solid slot0, PrismAnimations.Solid slot1, PrismAnimations.Solid slot2, PrismAnimations.Solid slot3, PrismAnimations.Solid slot4, PrismAnimations.Solid slot5, PrismAnimations.Solid slot6, PrismAnimations.Solid slot7, PrismAnimations.Solid slot8, boolean aim, boolean fail)
+    public static void updateleds(GoBildaPrismDriver prismDriver, String slot0Color, String slot1Color, String slot2Color, PrismAnimations.Solid slot0, PrismAnimations.Solid slot1, PrismAnimations.Solid slot2, PrismAnimations.Solid slot3, PrismAnimations.Solid slot4, PrismAnimations.Solid slot5, PrismAnimations.Solid slot6, PrismAnimations.Solid slot7, PrismAnimations.Solid slot8)
     {
-        if (aim)
+        if(slot0Color.equals("green"))
         {
             slot0.setBrightness(25);
             slot3.setBrightness(25);
             slot6.setBrightness(25);
-            slot0.setPrimaryColor(Color.YELLOW);
-            slot3.setPrimaryColor(Color.YELLOW);
-            slot6.setPrimaryColor(Color.YELLOW);
-
-            slot1.setBrightness(25);
-            slot4.setBrightness(25);
-            slot7.setBrightness(25);
-            slot1.setPrimaryColor(Color.YELLOW);
-            slot4.setPrimaryColor(Color.YELLOW);
-            slot7.setPrimaryColor(Color.YELLOW);
-
-            slot2.setBrightness(25);
-            slot5.setBrightness(25);
-            slot8.setBrightness(25);
-            slot2.setPrimaryColor(Color.YELLOW);
-            slot5.setPrimaryColor(Color.YELLOW);
-            slot8.setPrimaryColor(Color.YELLOW);
-        } else if (fail) {
+            slot0.setPrimaryColor(Color.GREEN);
+            slot3.setPrimaryColor(Color.GREEN);
+            slot6.setPrimaryColor(Color.GREEN);
+        } else if (slot0Color.equals("purple")) {
             slot0.setBrightness(25);
             slot3.setBrightness(25);
             slot6.setBrightness(25);
-            slot0.setPrimaryColor(Color.RED);
-            slot3.setPrimaryColor(Color.RED);
-            slot6.setPrimaryColor(Color.RED);
+            slot0.setPrimaryColor(Color.PURPLE);
+            slot3.setPrimaryColor(Color.PURPLE);
+            slot6.setPrimaryColor(Color.PURPLE);
+        }
+        else {
+            slot0.setBrightness(0);
+            slot3.setBrightness(0);
+            slot6.setBrightness(0);
+        }
 
+        if(slot1Color.equals("green"))
+        {
             slot1.setBrightness(25);
             slot4.setBrightness(25);
             slot7.setBrightness(25);
-            slot1.setPrimaryColor(Color.RED);
-            slot4.setPrimaryColor(Color.RED);
-            slot7.setPrimaryColor(Color.RED);
-
+            slot1.setPrimaryColor(Color.GREEN);
+            slot4.setPrimaryColor(Color.GREEN);
+            slot7.setPrimaryColor(Color.GREEN);
+        } else if (slot1Color.equals("purple")) {
+            slot1.setBrightness(25);
+            slot4.setBrightness(25);
+            slot7.setBrightness(25);
+            slot1.setPrimaryColor(Color.PURPLE);
+            slot4.setPrimaryColor(Color.PURPLE);
+            slot7.setPrimaryColor(Color.PURPLE);
+        }
+        else {
+            slot1.setBrightness(0);
+            slot4.setBrightness(0);
+            slot7.setBrightness(0);
+        }
+        if(slot2Color.equals("green"))
+        {
             slot2.setBrightness(25);
             slot5.setBrightness(25);
             slot8.setBrightness(25);
-            slot2.setPrimaryColor(Color.RED);
-            slot5.setPrimaryColor(Color.RED);
-            slot8.setPrimaryColor(Color.RED);
-        } else {
-            if(slot0Color.equals("green"))
-            {
-                slot0.setBrightness(25);
-                slot3.setBrightness(25);
-                slot6.setBrightness(25);
-                slot0.setPrimaryColor(Color.GREEN);
-                slot3.setPrimaryColor(Color.GREEN);
-                slot6.setPrimaryColor(Color.GREEN);
-            } else if (slot0Color.equals("purple")) {
-                slot0.setBrightness(25);
-                slot3.setBrightness(25);
-                slot6.setBrightness(25);
-                slot0.setPrimaryColor(Color.PURPLE);
-                slot3.setPrimaryColor(Color.PURPLE);
-                slot6.setPrimaryColor(Color.PURPLE);
-            }
-            else {
-                slot0.setBrightness(0);
-                slot3.setBrightness(0);
-                slot6.setBrightness(0);
-            }
-
-            if(slot1Color.equals("green"))
-            {
-                slot1.setBrightness(25);
-                slot4.setBrightness(25);
-                slot7.setBrightness(25);
-                slot1.setPrimaryColor(Color.GREEN);
-                slot4.setPrimaryColor(Color.GREEN);
-                slot7.setPrimaryColor(Color.GREEN);
-            } else if (slot1Color.equals("purple")) {
-                slot1.setBrightness(25);
-                slot4.setBrightness(25);
-                slot7.setBrightness(25);
-                slot1.setPrimaryColor(Color.PURPLE);
-                slot4.setPrimaryColor(Color.PURPLE);
-                slot7.setPrimaryColor(Color.PURPLE);
-            }
-            else {
-                slot1.setBrightness(0);
-                slot4.setBrightness(0);
-                slot7.setBrightness(0);
-            }
-            if(slot2Color.equals("green"))
-            {
-                slot2.setBrightness(25);
-                slot5.setBrightness(25);
-                slot8.setBrightness(25);
-                slot2.setPrimaryColor(Color.GREEN);
-                slot5.setPrimaryColor(Color.GREEN);
-                slot8.setPrimaryColor(Color.GREEN);
-            } else if (slot2Color.equals("purple")) {
-                slot2.setBrightness(25);
-                slot5.setBrightness(25);
-                slot8.setBrightness(25);
-                slot2.setPrimaryColor(Color.PURPLE);
-                slot5.setPrimaryColor(Color.PURPLE);
-                slot8.setPrimaryColor(Color.PURPLE);
-            }
-            else {
-                slot2.setBrightness(0);
-                slot5.setBrightness(0);
-                slot8.setBrightness(0);
-            }
+            slot2.setPrimaryColor(Color.GREEN);
+            slot5.setPrimaryColor(Color.GREEN);
+            slot8.setPrimaryColor(Color.GREEN);
+        } else if (slot2Color.equals("purple")) {
+            slot2.setBrightness(25);
+            slot5.setBrightness(25);
+            slot8.setBrightness(25);
+            slot2.setPrimaryColor(Color.PURPLE);
+            slot5.setPrimaryColor(Color.PURPLE);
+            slot8.setPrimaryColor(Color.PURPLE);
         }
-
+        else {
+            slot2.setBrightness(0);
+            slot5.setBrightness(0);
+            slot8.setBrightness(0);
+        }
 
         prismDriver.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_0, slot0);
         prismDriver.insertAndUpdateAnimation(GoBildaPrismDriver.LayerHeight.LAYER_1, slot1);
@@ -801,7 +746,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
     {
         int currentslotPlus1 = (currentslot+1)%3;
         int currentslotPlus2 = (currentslot+2)%3;
-        updateleds(prismDriver, currentartifacts.get(currentslot), currentartifacts.get(currentslotPlus1), currentartifacts.get(currentslotPlus2), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, false, false);
+        updateleds(prismDriver, currentartifacts.get(currentslot), currentartifacts.get(currentslotPlus1), currentartifacts.get(currentslotPlus2), slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
     }
 }
 

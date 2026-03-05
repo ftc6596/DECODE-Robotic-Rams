@@ -50,7 +50,7 @@ public class BackAutoBlue extends OpMode {
     private Path scorePreload;
     private PathChain grabPickup1, backup, grabPickup1B, scorePickup1, ending;
     boolean foundMotif = false;
-    double velocity = 810;
+    double velocity = 1000;
 
     ArrayList<String> motif = new ArrayList<>();
     public void buildPaths() {
@@ -310,8 +310,8 @@ public class BackAutoBlue extends OpMode {
         sorter.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
         topMotor.setDirection(DcMotorSimple.Direction.REVERSE);
 
-        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
-        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14.1));
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.1,0,0,14));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.1,0,0,14));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
 
         limelight.pipelineSwitch(0);

@@ -69,8 +69,8 @@ public class MORTARTeleop extends LinearOpMode {
         bottomMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         waitForStart();
         //PIDF Coefficients
-        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
-        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(27.5,0,1.25,14));
+        topMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.075,0,0,14));
+        bottomMotor.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(8.075,0,0,14));
         sorter.setPIDFCoefficients(DcMotor.RunMode.RUN_USING_ENCODER, new PIDFCoefficients(12.5,.5,3,15));
         //Get the flicker set
         outtakeFeeder.setPosition(0);
@@ -102,7 +102,7 @@ public class MORTARTeleop extends LinearOpMode {
                                 }
                             }
                             //Auto-Velocity Code
-                            velocity = 850 - ((195 * a) - 30);
+                            velocity = 1325 - ((195 * a) - 30);
                         }
                     }
                 }
