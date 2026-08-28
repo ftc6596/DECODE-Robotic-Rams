@@ -66,7 +66,7 @@ public class ObeliskAutoBlue extends OpMode {
 
     ArrayList<String> currentArtifacts = new ArrayList<>(3);
 
-    private final Pose startPose = new Pose(32.75, 129, Math.toRadians(270));// Start Pose of our robot.
+    private final Pose startPose = new Pose(30, 129, Math.toRadians(270));// Start Pose of our robot.
     private final Pose ReadMotifPose = new Pose(61, 91, Math.toRadians(270));
     private final Pose scorePose = new Pose(55, 91, Math.toRadians(314)); // Scoring Pose of our robot. It is facing the goal at a 135 degree angle.
     private final Pose pickup1SetUpPose = new Pose(40, 82, Math.toRadians(180));

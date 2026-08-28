@@ -137,7 +137,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                                 autoAiming = false;
                             }
                         }
-                        velocity = 1375 - ((225 * a) - 30);
+                        velocity = 1150 - ((225 * a) - 45);
                     }
                 }
                 else if (autoAiming)
@@ -153,7 +153,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                     //Manual Flywheel speed just in case ;)
                     if (gamepad2.left_trigger != 0)
                     {
-                        velocity = 1430;
+                        velocity = 1330;
                     }
                     else
                     {
@@ -171,7 +171,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                 //Manual Flywheel speed just in case ;)
                 if (gamepad2.left_trigger != 0)
                 {
-                    velocity = 1430;
+                    velocity = 1330;
                 }
                 else
                 {
@@ -191,7 +191,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
             {
                 if((sorter.getCurrentPosition() > sorter.getTargetPosition() - 8 && sorter.getCurrentPosition() < sorter.getTargetPosition() + 8) && (currentartifacts.get(0).equals("none") || currentartifacts.get(1).equals("none") ||currentartifacts.get(2).equals("none")))
                 {
-                    if((rPercent > .12 && rPercent < .25) && (gPercent > .4 && gPercent < .65) && (bPercent > .3 && bPercent < .5) && !currentartifacts.get(currentslot).equals("green")){
+                    if((rPercent > .12 && rPercent < .225) && (gPercent > .4 && gPercent < .65) && (bPercent > .3 && bPercent < .375) && !currentartifacts.get(currentslot).equals("green")){
                         color = "green";
                         currentartifacts.set(currentslot, "green");
                         if(!currentartifacts.get(0).equals("none") && !currentartifacts.get(1).equals("none") && !currentartifacts.get(2).equals("none"))
@@ -205,7 +205,7 @@ public class MORTARTeleopLEDs extends LinearOpMode {
                         }
                         UpdateLEDs(currentartifacts, currentslot, prismDriver, slot0, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8);
                     }
-                    else if ((rPercent > .1 && rPercent < .35) && (gPercent > .1 && gPercent < .35) && (bPercent > .35 && bPercent < .65) && !currentartifacts.get(currentslot).equals("purple")) {
+                    else if ((rPercent > .1 && rPercent < .325) && (gPercent > .1 && gPercent < .3) && (bPercent > .35 && bPercent < .55) && !currentartifacts.get(currentslot).equals("purple")) {
                         color = "purple";
                         currentartifacts.set(currentslot, "purple");
                         if(!currentartifacts.get(0).equals("none") && !currentartifacts.get(1).equals("none") && !currentartifacts.get(2).equals("none"))
